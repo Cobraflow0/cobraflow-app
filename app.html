@@ -258,6 +258,15 @@ const PLANS={
 };
 
 let U=null,P=null,facts=[],deus=[],contacts=[];
+function getDeudorName(val){
+  if(!val) return "—";
+  if(Array.isArray(val)){
+    const id=val[0];
+    const d=deus.find(x=>x.id===id);
+    return d?d.fields["Nombre del deudor"]:"—";
+  }
+  return val;
+}
 
 async function af(tbl,fml=''){
   let url=`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}?pageSize=100`;
@@ -380,7 +389,7 @@ function frow(f){
   const label=allowed?nivel:(nivel+' 🔒');
   return `<div class="tr fg fi" onclick="showDetail('${f.id}')">
     <div class="cell b m">${p['Numero factura']||'—'}</div>
-    <div class="cell">${p['Deudor']||'—'}</div>
+    <div class="cell">${getDeudorName(p['Deudor'])}</div>
     <div class="cell b">${eur(p['Importe'])}</div>
     <div class="cell">${sbadge(p['Estado'])}</div>
     <div class="cell"><span class="nivel-pill"><span class="ndot" style="background:${cc}"></span><span style="color:${cc};font-family:var(--font-mono);font-size:11px">${label}</span></span></div>
@@ -478,7 +487,7 @@ function showDetail(id){
   document.getElementById('dp').innerHTML=`
     <button class="cbtn" onclick="closeDetail()">×</button>
     <div class="dtitle">${p['Numero factura']||'Factura'}</div>
-    <div class="dsub">${p['Deudor']||'—'} · ${p['Estado']||'Pendiente'}</div>
+    <div class="dsub">${getDeudorName(p['Deudor'])} · ${p['Estado']||'Pendiente'}</div>
     <div class="nbar">${bars}</div>
     <div style="font-size:11px;color:${co};font-family:var(--font-mono);margin-bottom:20px">${nivel}</div>
     <div class="drow"><span class="dkey">Importe</span><span class="dval">${eur(p['Importe'])}</span></div>
