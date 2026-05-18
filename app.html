@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CobraFlow — Panel de cliente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#0a0a08;--surface:#0f0f0d;--surface2:#141412;
+  --off-white:#f2efe8;--cream:#c8c4b8;--muted:#5a5a52;
+  --border:rgba(242,239,232,0.08);--border2:rgba(242,239,232,0.14);
+  --accent:#d4ff4a;--accent-dim:#b8e03a;--red:#e84040;--amber:#ef9f27;
+  --font-display:'Bebas Neue',sans-serif;--font-body:'DM Sans',sans-serif;--font-mono:'DM Mono',monospace;
+}
+html,body{height:100%;font-family:var(--font-body);background:var(--black);color:var(--off-white);font-size:14px;line-height:1.6;overflow:hidden}
+#login-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-box{width:400px;padding:48px}
+.login-logo{font-family:var(--font-display);font-size:36px;letter-spacing:0.02em;margin-bottom:8px}
+.login-logo span{color:var(--accent)}
+.login-sub{font-size:14px;color:var(--muted);margin-bottom:40px;font-weight:300}
+.login-label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block}
+.login-input{width:100%;background:var(--surface);border:0.5px solid var(--border2);border-radius:6px;padding:12px 16px;font-family:var(--font-body);font-size:14px;color:var(--off-white);outline:none;margin-bottom:16px;transition:border-color 0.2s}
+.login-input:focus{border-color:rgba(212,255,74,0.4)}
+.login-btn{width:100%;background:var(--accent);color:var(--black);border:none;padding:14px;border-radius:6px;font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;margin-top:8px;transition:background 0.2s}
+.login-btn:hover{background:var(--accent-dim)}
+.login-error{color:var(--red);font-size:13px;margin-top:12px;display:none}
+.login-line{height:0.5px;background:var(--border);margin:32px 0}
+.login-hint{font-size:12px;color:var(--muted);text-align:center;line-height:2}
+.login-hint span{color:var(--accent)}
+#app{display:none;height:100vh;flex-direction:row}
+.sidebar{width:220px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;padding:24px 0;flex-shrink:0}
+.sidebar-logo{font-family:var(--font-display);font-size:22px;letter-spacing:0.02em;padding:0 20px 24px;border-bottom:0.5px solid var(--border)}
+.sidebar-logo span{color:var(--accent)}
+.sidebar-nav{padding:16px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.15s;border-left:2px solid transparent}
+.nav-item:hover{color:var(--cream);background:rgba(242,239,232,0.03)}
+.nav-item.active{color:var(--accent);background:rgba(212,255,74,0.06);border-left-color:var(--accent)}
+.nav-item.locked{opacity:0.3;cursor:not-allowed}
+.sidebar-bottom{padding:16px 20px;border-top:0.5px solid var(--border)}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:rgba(212,255,74,0.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--accent);flex-shrink:0}
+.user-name{font-size:12px;color:var(--cream);font-weight:500}
+.user-plan{font-size:11px}
+.logout-btn{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:0;font-family:var(--font-body);transition:color 0.2s}
+.logout-btn:hover{color:var(--off-white)}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{padding:20px 32px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.page-title{font-family:var(--font-display);font-size:28px;letter-spacing:0.02em}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:6px;font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;border:none}
+.btn-primary{background:var(--accent);color:var(--black)}
+.btn-primary:hover{background:var(--accent-dim)}
+.btn-secondary{background:transparent;color:var(--muted);border:0.5px solid var(--border2)}
+.btn-secondary:hover{color:var(--off-white)}
+.btn-danger{background:transparent;color:var(--red);border:0.5px solid rgba(232,64,64,0.3)}
+.btn-danger:hover{background:rgba(232,64,64,0.1)}
+.btn-amber{background:var(--amber);color:var(--black)}
+.content{padding:28px 32px;flex:1}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.metric{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:20px}
+.metric-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.metric-value{font-family:var(--font-display);font-size:36px;line-height:1;letter-spacing:0.02em}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+.th-row{display:grid;padding:12px 20px;border-bottom:0.5px solid var(--border)}
+.th-row span{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.tr{display:grid;padding:14px 20px;border-bottom:0.5px solid rgba(242,239,232,0.04);align-items:center;transition:background 0.15s;cursor:pointer}
+.tr:last-child{border-bottom:none}
+.tr:hover{background:rgba(242,239,232,0.02)}
+.cell{font-size:13px;color:var(--cream)}
+.cell.b{color:var(--off-white);font-weight:500}
+.cell.m{font-family:var(--font-mono);font-size:12px}
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--font-mono)}
+.bc{background:rgba(212,255,74,0.12);color:var(--accent)}
+.bp{background:rgba(232,64,64,0.12);color:var(--red)}
+.bpr{background:rgba(239,159,39,0.12);color:var(--amber)}
+.bx{background:rgba(90,90,82,0.2);color:var(--muted)}
+.nivel-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-mono)}
+.ndot{width:5px;height:5px;border-radius:50%}
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.loading{padding:40px 20px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px}
+.fg{grid-template-columns:0.8fr 1.4fr 0.9fr 0.9fr 0.9fr 0.8fr}
+.dg{grid-template-columns:1.4fr 1.6fr 0.8fr 0.8fr 0.6fr}
+.eg{grid-template-columns:0.8fr 1.2fr 0.7fr 0.8fr 0.6fr 0.5fr}
+.foverlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center}
+.fbox{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;width:580px;max-height:90vh;overflow-y:auto;padding:32px}
+.ftitle{font-family:var(--font-display);font-size:24px;letter-spacing:0.02em;margin-bottom:24px}
+.fsec{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin:20px 0 14px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ff{display:flex;flex-direction:column;gap:6px}
+.ff.full{grid-column:1/-1}
+.flabel{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.finput{background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:var(--font-body);font-size:13px;color:var(--off-white);outline:none;transition:border-color 0.2s;width:100%}
+.finput:focus{border-color:rgba(212,255,74,0.35)}
+.finput option{background:var(--surface2)}
+.faction{display:flex;gap:10px;margin-top:24px}
+.ftip{background:rgba(212,255,74,0.06);border:0.5px solid rgba(212,255,74,0.15);border-radius:6px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:20px;display:flex;gap:8px}
+.upgrade-box{background:rgba(239,159,39,0.07);border:0.5px solid rgba(239,159,39,0.25);border-radius:10px;padding:32px;text-align:center;margin:20px 0}
+.upgrade-title{font-family:var(--font-display);font-size:28px;color:var(--amber);letter-spacing:0.02em;margin-bottom:10px}
+.upgrade-text{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.7}
+.limit-wrap{margin-bottom:24px}
+.limit-info{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.limit-bar{background:var(--surface2);border-radius:4px;height:4px;overflow:hidden}
+.limit-fill{height:100%;border-radius:4px;transition:width 0.5s}
+.doverlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:150;display:flex;justify-content:flex-end}
+.dpanel{width:420px;background:var(--surface);border-left:0.5px solid var(--border2);height:100%;overflow-y:auto;padding:28px}
+.dtitle{font-family:var(--font-display);font-size:22px;letter-spacing:0.02em;margin-bottom:6px}
+.dsub{font-size:12px;color:var(--muted);margin-bottom:24px;font-family:var(--font-mono)}
+.drow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border)}
+.drow:last-child{border-bottom:none}
+.dkey{font-size:12px;color:var(--muted)}
+.dval{font-size:13px;color:var(--off-white);font-weight:500;text-align:right}
+.dactions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.nbar{display:flex;gap:4px;margin:16px 0 6px}
+.nseg{flex:1;height:4px;border-radius:2px;background:var(--border)}
+.cbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;float:right;padding:0;line-height:1;transition:color 0.2s}
+.cbtn:hover{color:var(--off-white)}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:14px 20px;font-size:13px;color:var(--cream);z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s;display:flex;align-items:center;gap:10px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(212,255,74,0.3)}
+.toast.error{border-color:rgba(232,64,64,0.3)}
+.tdot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.toast.error .tdot{background:var(--red)}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fi{animation:fi 0.25s ease forwards}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box fi">
+    <div class="login-logo">Cobra<span>Flow</span></div>
+    <div class="login-sub">Panel de gestión de cobros</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="le" placeholder="tu@empresa.com">
+    <label class="login-label">Contraseña</label>
+    <input class="login-input" type="password" id="lp" placeholder="••••••••">
+    <button class="login-btn" onclick="doLogin()">Entrar al panel →</button>
+    <div class="login-error" id="lerr">Email o contraseña incorrectos</div>
+    <div class="login-line"></div>
+    <div class="login-hint">
+      Basic → <span>basic@cobraflow.es</span> / cobra2025<br>
+      Pro → <span>demo@cobraflow.es</span> / cobra2025<br>
+      Business → <span>business@cobraflow.es</span> / cobra2025
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">Cobra<span>Flow</span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="go('dashboard')">◈ &nbsp;Panel</div>
+      <div class="nav-item" onclick="go('facturas')">◻ &nbsp;Facturas</div>
+      <div class="nav-item" onclick="go('deudores')">◯ &nbsp;Deudores</div>
+      <div class="nav-item" id="nav-emails" onclick="goEmails()">✉ &nbsp;Emails enviados</div>
+      <div class="nav-item" id="nav-reportes" onclick="goReportes()">▣ &nbsp;Reportes</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-info">
+        <div class="user-avatar" id="uav">CF</div>
+        <div>
+          <div class="user-name" id="uname">—</div>
+          <div class="user-plan" id="uplan">—</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="s-dashboard" style="display:flex;flex-direction:column">
+      <div class="topbar"><div class="page-title">Panel general</div><button class="btn btn-primary" onclick="openForm('factura')">+ Nueva factura</button></div>
+      <div class="content">
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Total pendiente</div><div class="metric-value" style="color:var(--red)" id="mp">—</div><div class="metric-sub">en cobro activo</div></div>
+          <div class="metric"><div class="metric-label">Cobrado</div><div class="metric-value" style="color:var(--accent)" id="mc">—</div><div class="metric-sub">facturas cerradas</div></div>
+          <div class="metric"><div class="metric-label">Facturas activas</div><div class="metric-value" id="ma">—</div><div class="metric-sub">en seguimiento</div></div>
+          <div class="metric"><div class="metric-label">Deudores</div><div class="metric-value" style="color:var(--amber)" id="md">—</div><div class="metric-sub" id="mds">registrados</div></div>
+        </div>
+        <div id="limit-wrap" style="display:none" class="limit-wrap">
+          <div class="limit-info"><span>DEUDORES USADOS</span><span id="ltext">0/10</span></div>
+          <div class="limit-bar"><div class="limit-fill" id="lfill" style="width:0%;background:var(--accent)"></div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:14px;font-weight:500;color:var(--cream)">Facturas recientes</span>
+        </div>
+        <div class="table-wrap">
+          <div class="th-row fg"><span>Nº factura</span><span>Deudor</span><span>Importe</span><span>Estado</span><span>Nivel</span><span>Días retraso</span></div>
+          <div id="dt"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="s-facturas" style="display:none;flex-direction:column">
+      <div class="topbar"><div class="page-title">Facturas</div><button class="btn btn-primary" onclick="openForm('factura')">+ Nueva factura</button></div>
+      <div class="content">
+        <div class="table-wrap">
+          <div class="th-row fg"><span>Nº factura</span><span>Deudor</span><span>Importe</span><span>Estado</span><span>Nivel</span><span>Días retraso</span></div>
+          <div id="ft"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="s-deudores" style="display:none;flex-direction:column">
+      <div class="topbar"><div class="page-title">Deudores</div><button class="btn btn-primary" onclick="openForm('deudor')">+ Nuevo deudor</button></div>
+      <div class="content">
+        <div class="table-wrap">
+          <div class="th-row dg"><span>Nombre</span><span>Email</span><span>Historial</span><span>Facturas</span><span>Ver</span></div>
+          <div id="deut"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="s-emails" style="display:none;flex-direction:column">
+      <div class="topbar"><div class="page-title">Emails enviados</div></div>
+      <div class="content">
+        <div class="table-wrap">
+          <div class="th-row eg"><span>Factura</span><span>Asunto</span><span>Nivel</span><span>Fecha</span><span>Abierto</span><span>Canal</span></div>
+          <div id="et"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="s-reportes" style="display:none;flex-direction:column">
+      <div class="topbar"><div class="page-title">Reportes mensuales</div></div>
+      <div class="content" id="reportes-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="fo" class="foverlay" style="display:none" onclick="if(event.target===this)closeForm()">
+  <div class="fbox"><div class="ftitle" id="ftitle">Nueva factura</div><div id="fc"></div></div>
+</div>
+
+<div id="do" class="doverlay" style="display:none" onclick="if(event.target===this)closeDetail()">
+  <div class="dpanel" id="dp"></div>
+</div>
+
+<div class="toast" id="toast"><div class="tdot"></div><span id="tmsg">OK</span></div>
+
+<script>
+const AT='patdOyrlgbjnlj55G.d92469a6c38c369911b483b86dad0d7754bafa362c5367357dbd3bafa269df19';
+const BASE='apptDmnwtgFzoPRnq';
+const TF='tblz4beyHIaWZPn4Q';
+
+const USERS={
+  'demo@cobraflow.es':     {pass:'cobra2025',name:'Demo Empresa',    ini:'DE',plan:'pro'},
+  'basic@cobraflow.es':    {pass:'cobra2025',name:'Cliente Basic',   ini:'CB',plan:'basic'},
+  'business@cobraflow.es': {pass:'cobra2025',name:'Cli. Business',   ini:'BU',plan:'business'}
+};
+const PLANS={
+  basic:   {label:'Basic',   color:'#888780',max:10,   niveles:[1,2],    emails:false,reportes:false},
+  pro:     {label:'Pro',     color:'#d4ff4a',max:50,   niveles:[1,2,3,4],emails:true, reportes:false},
+  business:{label:'Business',color:'#ef9f27',max:99999,niveles:[1,2,3,4],emails:true, reportes:true}
+};
+
+let U=null,P=null,facts=[],deus=[],contacts=[];
+
+async function af(tbl,fml=''){
+  let url=`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}?pageSize=100`;
+  if(fml) url+=`&filterByFormula=${encodeURIComponent(fml)}`;
+  try{const r=await fetch(url,{headers:{Authorization:`Bearer ${AT}`}});if(!r.ok)return[];return(await r.json()).records||[];}catch{return[];}
+}
+async function ac(tbl,fields){
+  const r=await fetch(`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}`,{method:'POST',headers:{Authorization:`Bearer ${AT}`,'Content-Type':'application/json'},body:JSON.stringify({fields})});
+  if(!r.ok)throw new Error('err');return r.json();
+}
+async function au(tbl,id,fields){
+  const r=await fetch(`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}/${id}`,{method:'PATCH',headers:{Authorization:`Bearer ${AT}`,'Content-Type':'application/json'},body:JSON.stringify({fields})});
+  if(!r.ok)throw new Error('err');return r.json();
+}
+
+function doLogin(){
+  const email=document.getElementById('le').value.trim().toLowerCase();
+  const pass=document.getElementById('lp').value;
+  const u=USERS[email];
+  if(u&&u.pass===pass){
+    U={email,...u};P=PLANS[u.plan];
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('uname').textContent=u.name;
+    document.getElementById('uav').textContent=u.ini;
+    document.getElementById('uplan').textContent='Plan '+P.label;
+    document.getElementById('uplan').style.color=P.color;
+    document.getElementById('lerr').style.display='none';
+    applyPlan();loadAll();
+  } else {document.getElementById('lerr').style.display='block';}
+}
+
+function applyPlan(){
+  if(!P.emails){
+    const el=document.getElementById('nav-emails');
+    el.classList.add('locked');
+    el.title='Disponible desde el plan Pro';
+  }
+  if(!P.reportes){
+    const el=document.getElementById('nav-reportes');
+    el.classList.add('locked');
+    el.title='Disponible en el plan Business';
+  }
+  if(P.max<99999) document.getElementById('limit-wrap').style.display='block';
+}
+
+document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('le').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function doLogout(){
+  U=null;P=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('le').value='';
+  document.getElementById('lp').value='';
+  document.getElementById('nav-emails').classList.remove('locked');
+  document.getElementById('nav-reportes').classList.remove('locked');
+}
+
+function go(name){
+  if(!P) return;
+  ['dashboard','facturas','deudores','emails','reportes'].forEach(s=>{
+    const el=document.getElementById('s-'+s);
+    if(el) el.style.display=s===name?'flex':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const map={dashboard:0,facturas:1,deudores:2,emails:3,reportes:4};
+  const navs=document.querySelectorAll('.nav-item');
+  if(map[name]!==undefined&&navs[map[name]]) navs[map[name]].classList.add('active');
+  if(name==='dashboard') rdash();
+  if(name==='facturas') rfacts();
+  if(name==='deudores') rdeus();
+  if(name==='emails') remails();
+  if(name==='reportes') rreportes();
+}
+
+function goEmails(){
+  if(!P.emails){toast('Disponible desde el plan Pro (99€/mes)','error');return;}
+  go('emails');
+}
+function goReportes(){
+  if(!P.reportes){toast('Disponible en el plan Business (199€/mes)','error');return;}
+  go('reportes');
+}
+
+async function loadAll(){
+  facts=await af(TF);
+  deus=await af('Deudores');
+  contacts=await af('Contactos');
+  rdash();
+}
+
+function nc(n){
+  if(!n)return'#5a5a52';
+  if(n.includes('1'))return'#d4ff4a';
+  if(n.includes('2'))return'#ef9f27';
+  if(n.includes('3'))return'#e8944a';
+  if(n.includes('4'))return'#e84040';
+  if(n==='Cobrada')return'#d4ff4a';
+  return'#5a5a52';
+}
+
+function sbadge(e){
+  if(e==='Cobrada')return'<span class="badge bc">Cobrada</span>';
+  if(e==='En proceso')return'<span class="badge bpr">En proceso</span>';
+  if(e==='Cancelada')return'<span class="badge bx">Cancelada</span>';
+  return'<span class="badge bp">Pendiente</span>';
+}
+
+function eur(v){if(!v)return'—';return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:0}).format(v);}
+
+function frow(f){
+  const p=f.fields;
+  const nivel=p['Nivel actual']||'—';
+  const c=nc(nivel);
+  const dias=p['Dias de retraso']||0;
+  const nNum=parseInt((nivel.match(/\d/)||['1'])[0]);
+  const allowed=P.niveles.includes(nNum)||nivel==='Cobrada'||nivel==='Cancelada'||nivel==='—';
+  const cc=allowed?c:'#3a3a32';
+  const label=allowed?nivel:(nivel+' 🔒');
+  return `<div class="tr fg fi" onclick="showDetail('${f.id}')">
+    <div class="cell b m">${p['Numero factura']||'—'}</div>
+    <div class="cell">${p['Deudor']||'—'}</div>
+    <div class="cell b">${eur(p['Importe'])}</div>
+    <div class="cell">${sbadge(p['Estado'])}</div>
+    <div class="cell"><span class="nivel-pill"><span class="ndot" style="background:${cc}"></span><span style="color:${cc};font-family:var(--font-mono);font-size:11px">${label}</span></span></div>
+    <div class="cell m" style="color:${dias>30?'var(--red)':dias>15?'var(--amber)':'var(--muted)'}">${dias>0?dias+'d':'—'}</div>
+  </div>`;
+}
+
+function rdash(){
+  if(!P) return;
+  const act=facts.filter(f=>f.fields['Estado']!=='Cobrada'&&f.fields['Estado']!=='Cancelada');
+  const cob=facts.filter(f=>f.fields['Estado']==='Cobrada');
+  document.getElementById('mp').textContent=eur(act.reduce((s,f)=>s+(f.fields['Importe']||0),0));
+  document.getElementById('mc').textContent=eur(cob.reduce((s,f)=>s+(f.fields['Importe']||0),0));
+  document.getElementById('ma').textContent=act.length;
+  document.getElementById('md').textContent=deus.length;
+  if(P.max<99999){
+    const pct=Math.min(100,Math.round(deus.length/P.max*100));
+    document.getElementById('ltext').textContent=`${deus.length} / ${P.max}`;
+    const f=document.getElementById('lfill');
+    f.style.width=pct+'%';
+    f.style.background=pct>=90?'var(--red)':pct>=70?'var(--amber)':'var(--accent)';
+  }
+  document.getElementById('dt').innerHTML=facts.slice(0,8).map(f=>frow(f)).join('')||empty('No hay facturas aún');
+}
+
+function rfacts(){document.getElementById('ft').innerHTML=facts.map(f=>frow(f)).join('')||empty('No hay facturas. Añade tu primera.');}
+
+function rdeus(){
+  if(!deus.length){document.getElementById('deut').innerHTML=empty('No hay deudores registrados.');return;}
+  document.getElementById('deut').innerHTML=deus.map(d=>{
+    const p=d.fields;
+    const h=p['Historial pagos']||'—';
+    const hc=h==='Moroso habitual'?'var(--red)':h==='A veces falla'?'var(--amber)':'var(--accent)';
+    const nf=Array.isArray(p['Facturas'])?p['Facturas'].length:0;
+    return `<div class="tr dg fi">
+      <div class="cell b">${p['Nombre del deudor']||'—'}</div>
+      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Email deudor']||'—'}</div>
+      <div class="cell"><span style="color:${hc};font-size:11px;font-family:var(--font-mono)">${h}</span></div>
+      <div class="cell m">${nf}</div>
+      <div class="cell"><button class="btn btn-secondary" style="padding:5px 12px;font-size:11px">Ver →</button></div>
+    </div>`;
+  }).join('');
+}
+
+function remails(){
+  if(!P.emails){
+    document.getElementById('et').innerHTML=`<div style="padding:40px;text-align:center">
+      <div style="font-family:var(--font-display);font-size:24px;color:var(--amber);margin-bottom:10px">Plan Pro o superior</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px">El tracking de emails y apertura de mensajes está disponible desde el plan Pro (99€/mes).</div>
+      <button class="btn btn-amber">Actualizar a Pro →</button>
+    </div>`;
+    return;
+  }
+  if(!contacts.length){document.getElementById('et').innerHTML=empty('No hay emails enviados aún.');return;}
+  document.getElementById('et').innerHTML=contacts.map(c=>{
+    const p=c.fields;
+    const nivel=p['Nivel']||'—';
+    const co=nc(nivel);
+    return `<div class="tr eg fi">
+      <div class="cell m b">${p['Factura ref']||'—'}</div>
+      <div class="cell" style="font-size:12px">${p['Asunto']||'—'}</div>
+      <div class="cell"><span style="color:${co};font-family:var(--font-mono);font-size:11px">${nivel}</span></div>
+      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Fecha envío']||'—'}</div>
+      <div class="cell">${p['Abierto']?'<span style="color:var(--accent);font-size:11px">✓ Sí</span>':'<span style="color:var(--muted);font-size:11px">No</span>'}</div>
+      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Canal']||'Email'}</div>
+    </div>`;
+  }).join('');
+}
+
+function rreportes(){
+  const c=document.getElementById('reportes-content');
+  if(!P.reportes){
+    c.innerHTML=`<div class="upgrade-box">
+      <div class="upgrade-title">Plan Business</div>
+      <div class="upgrade-text">Los reportes mensuales automáticos con resumen de cobros, deudores y análisis están disponibles en el plan Business (199€/mes).<br>Incluye informe mensual automático + soporte prioritario.</div>
+      <button class="btn btn-amber">Actualizar a Business →</button>
+    </div>`;
+  } else {
+    c.innerHTML=`<div class="empty" style="padding-top:60px">
+      <div style="font-size:32px;opacity:0.3;margin-bottom:12px">▣</div>
+      <div style="font-size:14px;color:var(--muted)">Los reportes se generan automáticamente el día 1 de cada mes y llegan a tu email.</div>
+    </div>`;
+  }
+}
+
+function empty(msg){return`<div class="empty"><div style="font-size:28px;opacity:0.2;margin-bottom:10px">◻</div><div style="font-size:13px">${msg}</div></div>`;}
+
+function showDetail(id){
+  const f=facts.find(x=>x.id===id);if(!f)return;
+  const p=f.fields;
+  const nivel=p['Nivel actual']||'Nivel 1';
+  const co=nc(nivel);
+  const nNum=parseInt((nivel.match(/\d/)||['1'])[0]);
+  const bars=[1,2,3,4].map(n=>`<div class="nseg" style="${n<=nNum&&nivel!=='Cobrada'&&nivel!=='Cancelada'?`background:${nc('Nivel '+n)}`:''}"></div>`).join('');
+  document.getElementById('dp').innerHTML=`
+    <button class="cbtn" onclick="closeDetail()">×</button>
+    <div class="dtitle">${p['Numero factura']||'Factura'}</div>
+    <div class="dsub">${p['Deudor']||'—'} · ${p['Estado']||'Pendiente'}</div>
+    <div class="nbar">${bars}</div>
+    <div style="font-size:11px;color:${co};font-family:var(--font-mono);margin-bottom:20px">${nivel}</div>
+    <div class="drow"><span class="dkey">Importe</span><span class="dval">${eur(p['Importe'])}</span></div>
+    <div class="drow"><span class="dkey">Fecha emisión</span><span class="dval">${p['Fecha emision']||'—'}</span></div>
+    <div class="drow"><span class="dkey">Fecha vencimiento</span><span class="dval">${p['Fecha vencimiento']||'—'}</span></div>
+    <div class="drow"><span class="dkey">Días de retraso</span><span class="dval" style="color:${(p['Dias de retraso']||0)>30?'var(--red)':'inherit'}">${p['Dias de retraso']||0} días</span></div>
+    <div class="drow"><span class="dkey">Último contacto</span><span class="dval">${p['Fecha Ultimo contacto']||'Sin contacto'}</span></div>
+    <div class="drow"><span class="dkey">Estado</span><span class="dval">${sbadge(p['Estado'])}</span></div>
+    <div class="dactions">
+      <button class="btn btn-primary" onclick="markCobrada('${id}')">✓ Marcar cobrada</button>
+      <button class="btn btn-secondary" onclick="closeDetail()">Cerrar</button>
+      <button class="btn btn-danger" onclick="cancelFact('${id}')">Cancelar</button>
+    </div>`;
+  document.getElementById('do').style.display='flex';
+}
+
+function closeDetail(){document.getElementById('do').style.display='none';}
+
+async function markCobrada(id){
+  try{await au(TF,id,{'Estado':'Cobrada','Nivel actual':'Cobrada'});toast('Factura marcada como cobrada','success');closeDetail();facts=await af(TF);rdash();rfacts();}
+  catch{toast('Error al actualizar','error');}
+}
+async function cancelFact(id){
+  try{await au(TF,id,{'Estado':'Cancelada','Nivel actual':'Cancelada'});toast('Factura cancelada','success');closeDetail();facts=await af(TF);rdash();rfacts();}
+  catch{toast('Error al cancelar','error');}
+}
+
+function openForm(type){
+  document.getElementById('ftitle').textContent=type==='factura'?'Nueva factura':'Nuevo deudor';
+  const c=document.getElementById('fc');
+  if(type==='factura'){
+    c.innerHTML=`<div class="ftip"><span style="color:var(--accent)">→</span><span>Una vez guardada, CobraFlow enviará el primer email mañana a las 9:00 automáticamente.</span></div>
+    <div class="fsec">Datos de la factura</div>
+    <div class="fgrid">
+      <div class="ff"><label class="flabel">Número *</label><input class="finput" id="fn" placeholder="FAC-001"></div>
+      <div class="ff"><label class="flabel">Importe (€) *</label><input class="finput" id="fi" type="number" placeholder="1500"></div>
+      <div class="ff"><label class="flabel">Fecha emisión *</label><input class="finput" id="fe" type="date"></div>
+      <div class="ff"><label class="flabel">Fecha vencimiento *</label><input class="finput" id="fv" type="date"></div>
+    </div>
+    <div class="fsec">Datos del deudor</div>
+    <div class="fgrid">
+      <div class="ff full"><label class="flabel">Nombre empresa / persona *</label><input class="finput" id="fd" placeholder="Empresa SL"></div>
+      <div class="ff full"><label class="flabel">Email del deudor *</label><input class="finput" id="fem" type="email" placeholder="pagos@empresa.es"></div>
+      <div class="ff"><label class="flabel">Teléfono</label><input class="finput" id="ft2" placeholder="Opcional"></div>
+      <div class="ff"><label class="flabel">Historial de pagos</label><select class="finput" id="fh"><option>Siempre paga</option><option>A veces falla</option><option>Moroso habitual</option></select></div>
+    </div>
+    <div class="faction"><button class="btn btn-primary" onclick="saveFactura()">Guardar y activar cobro →</button><button class="btn btn-secondary" onclick="closeForm()">Cancelar</button></div>`;
+  } else {
+    c.innerHTML=`<div class="fgrid">
+      <div class="ff full"><label class="flabel">Nombre *</label><input class="finput" id="dn" placeholder="Empresa SL"></div>
+      <div class="ff full"><label class="flabel">Email *</label><input class="finput" id="de2" type="email" placeholder="contacto@empresa.es"></div>
+      <div class="ff"><label class="flabel">Teléfono</label><input class="finput" id="dt2" placeholder="Opcional"></div>
+      <div class="ff"><label class="flabel">Historial</label><select class="finput" id="dh"><option>Siempre paga</option><option>A veces falla</option><option>Moroso habitual</option></select></div>
+      <div class="ff full"><label class="flabel">Notas</label><input class="finput" id="dno" placeholder="Opcional"></div>
+    </div>
+    <div class="faction"><button class="btn btn-primary" onclick="saveDeudor()">Guardar deudor →</button><button class="btn btn-secondary" onclick="closeForm()">Cancelar</button></div>`;
+  }
+  document.getElementById('fo').style.display='flex';
+}
+
+function closeForm(){document.getElementById('fo').style.display='none';}
+
+async function saveFactura(){
+  const num=document.getElementById('fn').value.trim();
+  const imp=parseFloat(document.getElementById('fi').value);
+  const em=document.getElementById('fe').value;
+  const vn=document.getElementById('fv').value;
+  const deu=document.getElementById('fd').value.trim();
+  const eml=document.getElementById('fem').value.trim();
+  if(!num||!imp||!em||!vn||!deu||!eml){toast('Rellena todos los campos obligatorios','error');return;}
+  if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado. Actualiza tu plan.`,'error');return;}
+  try{
+    await ac(TF,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Nivel actual':'Nivel 1','Estado':'Pendiente'});
+    toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');
+    closeForm();facts=await af(TF);rdash();rfacts();
+  }catch{toast('Error al guardar. Verifica la conexión con Airtable.','error');}
+}
+
+async function saveDeudor(){
+  const n=document.getElementById('dn').value.trim();
+  const e=document.getElementById('de2').value.trim();
+  if(!n||!e){toast('Nombre y email son obligatorios','error');return;}
+  if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado.`,'error');return;}
+  try{
+    await ac('Deudores',{'Nombre del deudor':n,'Email deudor':e,'Teléfono':document.getElementById('dt2').value,'Historial pagos':document.getElementById('dh').value,'Notas':document.getElementById('dno').value});
+    toast('Deudor guardado','success');closeForm();deus=await af('Deudores');rdeus();
+  }catch{toast('Error al guardar deudor','error');}
+}
+
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.className=`toast ${type}`;
+  document.getElementById('tmsg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+</script>
+</body>
+</html>
