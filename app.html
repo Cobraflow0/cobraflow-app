@@ -6,6 +6,7 @@
 <title>CobraFlow — Panel de cliente</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -140,11 +141,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
     <button class="login-btn" onclick="doLogin()">Entrar al panel →</button>
     <div class="login-error" id="lerr">Email o contraseña incorrectos</div>
     <div class="login-line"></div>
-    <div class="login-hint">
-      Basic → <span>basic@cobraflow.es</span> / cobra2025<br>
-      Pro → <span>demo@cobraflow.es</span> / cobra2025<br>
-      Business → <span>business@cobraflow.es</span> / cobra2025
-    </div>
+    <div class="login-hint">¿Problemas para entrar? Contacta con <span>soporte@cobraflow.es</span></div>
   </div>
 </div>
 
@@ -246,11 +243,10 @@ const AT='patdOyrlgbjnlj55G.d92469a6c38c369911b483b86dad0d7754bafa362c5367357dbd
 const BASE='apptDmnwtgFzoPRnq';
 const TF='tblz4beyHIaWZPn4Q';
 
-const USERS={
-  'demo@cobraflow.es':     {pass:'cobra2025',name:'Demo Empresa',    ini:'DE',plan:'pro'},
-  'basic@cobraflow.es':    {pass:'cobra2025',name:'Cliente Basic',   ini:'CB',plan:'basic'},
-  'business@cobraflow.es': {pass:'cobra2025',name:'Cli. Business',   ini:'BU',plan:'business'}
-};
+const SUPABASE_URL='https://wuqawfzkzwiyxieoovax.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cWF3ZnprendpeXhpZW9vdmF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjUxNDgsImV4cCI6MjA5NDcwMTE0OH0.2n3MwrYBddvPSZx68IYQBAqMpJYjkPcPAui8di9g7eM';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
 const PLANS={
   basic:   {label:'Basic',   color:'#888780',max:10,   niveles:[1,2],    emails:false,reportes:false},
   pro:     {label:'Pro',     color:'#d4ff4a',max:50,   niveles:[1,2,3,4],emails:true, reportes:false},
@@ -282,21 +278,37 @@ async function au(tbl,id,fields){
   if(!r.ok)throw new Error('err');return r.json();
 }
 
-function doLogin(){
+function initUser(email, planKey, displayName){
+  const planK=(planKey||'basic').toLowerCase();
+  P=PLANS[planK]||PLANS['basic'];
+  const ini=displayName?displayName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase():'CF';
+  U={email, name:displayName||email, ini, plan:planK};
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('uname').textContent=U.name;
+  document.getElementById('uav').textContent=U.ini;
+  document.getElementById('uplan').textContent='Plan '+P.label;
+  document.getElementById('uplan').style.color=P.color;
+  document.getElementById('lerr').style.display='none';
+  applyPlan();loadAll();
+}
+
+async function doLogin(){
   const email=document.getElementById('le').value.trim().toLowerCase();
   const pass=document.getElementById('lp').value;
-  const u=USERS[email];
-  if(u&&u.pass===pass){
-    U={email,...u};P=PLANS[u.plan];
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    document.getElementById('uname').textContent=u.name;
-    document.getElementById('uav').textContent=u.ini;
-    document.getElementById('uplan').textContent='Plan '+P.label;
-    document.getElementById('uplan').style.color=P.color;
-    document.getElementById('lerr').style.display='none';
-    applyPlan();loadAll();
-  } else {document.getElementById('lerr').style.display='block';}
+  const btn=document.querySelector('.login-btn');
+  btn.textContent='Entrando...';btn.disabled=true;
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){document.getElementById('lerr').style.display='block';btn.textContent='Entrar al panel →';btn.disabled=false;return;}
+    const {data:profile}=await sb.from('profiles').select('plan,display_name').eq('id',data.user.id).single();
+    const planKey=profile?.plan||'basic';
+    const displayName=profile?.display_name||email;
+    initUser(email,planKey,displayName);
+  }catch(e){
+    document.getElementById('lerr').style.display='block';
+  }
+  btn.textContent='Entrar al panel →';btn.disabled=false;
 }
 
 function applyPlan(){
@@ -316,7 +328,8 @@ function applyPlan(){
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('le').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-function doLogout(){
+async function doLogout(){
+  await sb.auth.signOut();
   U=null;P=null;
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -452,7 +465,7 @@ function remails(){
       <div class="cell m b">${p['Factura ref']||'—'}</div>
       <div class="cell" style="font-size:12px">${p['Asunto']||'—'}</div>
       <div class="cell"><span style="color:${co};font-family:var(--font-mono);font-size:11px">${nivel}</span></div>
-      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Fecha envio']||'—'}</div>
+      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Fecha envío']||'—'}</div>
       <div class="cell">${p['Abierto']?'<span style="color:var(--accent);font-size:11px">✓ Sí</span>':'<span style="color:var(--muted);font-size:11px">No</span>'}</div>
       <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Canal']||'Email'}</div>
     </div>`;
