@@ -365,9 +365,13 @@ function goReportes(){
   go('reportes');
 }
 
+// MODIFICADO: filtra facturas y deudores por cliente_id del usuario logueado
 async function loadAll(){
-  facts=await af(TF);
-  deus=await af('Deudores');
+  const {data:{user}} = await sb.auth.getUser();
+  const uid = user ? user.id : null;
+  const fml = uid ? `{cliente_id}="${uid}"` : '';
+  facts=await af(TF, fml);
+  deus=await af('Deudores', fml);
   contacts=await af('Contactos');
   rdash();
 }
@@ -465,7 +469,7 @@ function remails(){
       <div class="cell m b">${p['Factura ref']||'—'}</div>
       <div class="cell" style="font-size:12px">${p['Asunto']||'—'}</div>
       <div class="cell"><span style="color:${co};font-family:var(--font-mono);font-size:11px">${nivel}</span></div>
-      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Fecha envío']||'—'}</div>
+      <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Fecha envio']||'—'}</div>
       <div class="cell">${p['Abierto']?'<span style="color:var(--accent);font-size:11px">✓ Sí</span>':'<span style="color:var(--muted);font-size:11px">No</span>'}</div>
       <div class="cell m" style="font-size:11px;color:var(--muted)">${p['Canal']||'Email'}</div>
     </div>`;
@@ -520,11 +524,17 @@ function showDetail(id){
 function closeDetail(){document.getElementById('do').style.display='none';}
 
 async function markCobrada(id){
-  try{await au(TF,id,{'Estado':'Cobrada','Nivel actual':'Cobrada'});toast('Factura marcada como cobrada','success');closeDetail();facts=await af(TF);rdash();rfacts();}
+  try{await au(TF,id,{'Estado':'Cobrada','Nivel actual':'Cobrada'});toast('Factura marcada como cobrada','success');closeDetail();
+    const {data:{user}}=await sb.auth.getUser();
+    const fml=user?`{cliente_id}="${user.id}"`:'';
+    facts=await af(TF,fml);rdash();rfacts();}
   catch{toast('Error al actualizar','error');}
 }
 async function cancelFact(id){
-  try{await au(TF,id,{'Estado':'Cancelada','Nivel actual':'Cancelada'});toast('Factura cancelada','success');closeDetail();facts=await af(TF);rdash();rfacts();}
+  try{await au(TF,id,{'Estado':'Cancelada','Nivel actual':'Cancelada'});toast('Factura cancelada','success');closeDetail();
+    const {data:{user}}=await sb.auth.getUser();
+    const fml=user?`{cliente_id}="${user.id}"`:'';
+    facts=await af(TF,fml);rdash();rfacts();}
   catch{toast('Error al cancelar','error');}
 }
 
@@ -563,6 +573,7 @@ function openForm(type){
 
 function closeForm(){document.getElementById('fo').style.display='none';}
 
+// MODIFICADO: guarda cliente_id al crear factura
 async function saveFactura(){
   const num=document.getElementById('fn').value.trim();
   const imp=parseFloat(document.getElementById('fi').value);
@@ -573,20 +584,29 @@ async function saveFactura(){
   if(!num||!imp||!em||!vn||!deu||!eml){toast('Rellena todos los campos obligatorios','error');return;}
   if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado. Actualiza tu plan.`,'error');return;}
   try{
-    await ac(TF,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Nivel actual':'Nivel 1','Estado':'Pendiente'});
+    const {data:{user}}=await sb.auth.getUser();
+    const uid=user?user.id:'';
+    await ac(TF,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Nivel actual':'Nivel 1','Estado':'Pendiente','cliente_id':uid});
     toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');
-    closeForm();facts=await af(TF);rdash();rfacts();
+    closeForm();
+    const fml=uid?`{cliente_id}="${uid}"`:'';
+    facts=await af(TF,fml);rdash();rfacts();
   }catch{toast('Error al guardar. Verifica la conexión con Airtable.','error');}
 }
 
+// MODIFICADO: guarda cliente_id al crear deudor
 async function saveDeudor(){
   const n=document.getElementById('dn').value.trim();
   const e=document.getElementById('de2').value.trim();
   if(!n||!e){toast('Nombre y email son obligatorios','error');return;}
   if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado.`,'error');return;}
   try{
-    await ac('Deudores',{'Nombre del deudor':n,'Email deudor':e,'Teléfono':document.getElementById('dt2').value,'Historial pagos':document.getElementById('dh').value,'Notas':document.getElementById('dno').value});
-    toast('Deudor guardado','success');closeForm();deus=await af('Deudores');rdeus();
+    const {data:{user}}=await sb.auth.getUser();
+    const uid=user?user.id:'';
+    await ac('Deudores',{'Nombre del deudor':n,'Email deudor':e,'Teléfono':document.getElementById('dt2').value,'Historial pagos':document.getElementById('dh').value,'Notas':document.getElementById('dno').value,'cliente_id':uid});
+    toast('Deudor guardado','success');closeForm();
+    const fml=uid?`{cliente_id}="${uid}"`:'';
+    deus=await af('Deudores',fml);rdeus();
   }catch{toast('Error al guardar deudor','error');}
 }
 
