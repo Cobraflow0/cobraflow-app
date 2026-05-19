@@ -18,6 +18,12 @@
 }
 html,body{height:100%;font-family:var(--font-body);background:var(--black);color:var(--off-white);font-size:14px;line-height:1.6;overflow:hidden}
 #login-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;z-index:1000}
+#loader-screen{position:fixed;inset:0;background:var(--black);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999}
+.loader-logo{font-family:var(--font-display);font-size:40px;letter-spacing:0.04em;color:var(--off-white);margin-bottom:6px}
+.loader-logo span{color:var(--accent)}
+.loader-msg{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:28px;height:16px;transition:opacity 0.35s}
+.loader-track{width:240px;height:2px;background:rgba(242,239,232,0.08);border-radius:2px;overflow:hidden}
+.loader-fill{height:100%;width:0%;background:var(--accent);border-radius:2px}
 .login-box{width:400px;padding:48px}
 .login-logo{font-family:var(--font-display);font-size:36px;letter-spacing:0.02em;margin-bottom:8px}
 .login-logo span{color:var(--accent)}
@@ -143,6 +149,12 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
     <div class="login-line"></div>
     <div class="login-hint">¿Problemas para entrar? Contacta con <span>soporte@cobraflow.es</span></div>
   </div>
+</div>
+
+<div id="loader-screen">
+  <div class="loader-logo">Cobra<span>Flow</span></div>
+  <div class="loader-msg" id="loader-msg">Conectando...</div>
+  <div class="loader-track"><div class="loader-fill" id="loader-fill"></div></div>
 </div>
 
 <div id="app">
@@ -278,19 +290,54 @@ async function au(tbl,id,fields){
   if(!r.ok)throw new Error('err');return r.json();
 }
 
+const LOADER_MSGS=["Conectando...","Cargando facturas...","Leyendo deudores...","Preparando tu panel..."];
+let loaderAnim=null,loaderW=0,loaderMi=0;
+
+function startLoader(){
+  const screen=document.getElementById('loader-screen');
+  const fill=document.getElementById('loader-fill');
+  const msg=document.getElementById('loader-msg');
+  screen.style.display='flex';
+  loaderW=0;loaderMi=0;
+  msg.textContent=LOADER_MSGS[0];
+  fill.style.transition='none';
+  fill.style.width='0%';
+  function tick(){
+    loaderW+=0.5;
+    if(loaderW>95)loaderW=95;
+    fill.style.width=loaderW+'%';
+    const idx=Math.min(Math.floor(loaderW/100*LOADER_MSGS.length),LOADER_MSGS.length-1);
+    if(idx!==loaderMi){loaderMi=idx;msg.style.opacity=0;setTimeout(()=>{msg.textContent=LOADER_MSGS[loaderMi];msg.style.opacity=1;},200);}
+    loaderAnim=requestAnimationFrame(tick);
+  }
+  loaderAnim=requestAnimationFrame(tick);
+}
+
+function stopLoader(){
+  if(loaderAnim) cancelAnimationFrame(loaderAnim);
+  const fill=document.getElementById('loader-fill');
+  fill.style.transition='width 0.3s ease';
+  fill.style.width='100%';
+  setTimeout(()=>{
+    document.getElementById('loader-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+  },350);
+}
+
 function initUser(email, planKey, displayName){
   const planK=(planKey||'basic').toLowerCase();
   P=PLANS[planK]||PLANS['basic'];
   const ini=displayName?displayName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase():'CF';
   U={email, name:displayName||email, ini, plan:planK};
   document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='flex';
   document.getElementById('uname').textContent=U.name;
   document.getElementById('uav').textContent=U.ini;
   document.getElementById('uplan').textContent='Plan '+P.label;
   document.getElementById('uplan').style.color=P.color;
   document.getElementById('lerr').style.display='none';
-  applyPlan();loadAll();
+  applyPlan();
+  startLoader();
+  loadAll();
 }
 
 async function doLogin(){
@@ -365,7 +412,6 @@ function goReportes(){
   go('reportes');
 }
 
-// MODIFICADO: filtra facturas y deudores por cliente_id del usuario logueado
 async function loadAll(){
   const {data:{user}} = await sb.auth.getUser();
   const uid = user ? user.id : null;
@@ -373,6 +419,7 @@ async function loadAll(){
   facts=await af(TF, fml);
   deus=await af('Deudores', fml);
   contacts=await af('Contactos');
+  stopLoader();
   rdash();
 }
 
