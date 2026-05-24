@@ -17,6 +17,8 @@
   --font-display:'Bebas Neue',sans-serif;--font-body:'DM Sans',sans-serif;--font-mono:'DM Mono',monospace;
 }
 html,body{height:100%;font-family:var(--font-body);background:var(--black);color:var(--off-white);font-size:14px;line-height:1.6;overflow:hidden}
+
+/* LOGIN */
 #login-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;z-index:1000}
 #loader-screen{position:fixed;inset:0;background:var(--black);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999}
 .loader-logo{font-family:var(--font-display);font-size:40px;letter-spacing:0.04em;color:var(--off-white);margin-bottom:6px}
@@ -37,6 +39,16 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 .login-line{height:0.5px;background:var(--border);margin:32px 0}
 .login-hint{font-size:12px;color:var(--muted);text-align:center;line-height:2}
 .login-hint span{color:var(--accent)}
+
+/* NUEVA CONTRASEÑA */
+#newpass-screen{position:fixed;inset:0;background:var(--black);display:none;align-items:center;justify-content:center;z-index:1000}
+.newpass-box{width:400px;padding:48px}
+.newpass-label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:block}
+.newpass-title{font-family:var(--font-display);font-size:32px;letter-spacing:0.02em;margin-bottom:8px}
+.newpass-sub{font-size:14px;color:var(--muted);margin-bottom:32px;font-weight:300}
+.newpass-error{color:var(--red);font-size:13px;margin-top:12px;display:none}
+
+/* APP */
 #app{display:none;height:100vh;flex-direction:row}
 .sidebar{width:220px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;padding:24px 0;flex-shrink:0}
 .sidebar-logo{font-family:var(--font-display);font-size:22px;letter-spacing:0.02em;padding:0 20px 24px;border-bottom:0.5px solid var(--border)}
@@ -136,6 +148,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box fi">
     <div class="login-logo">Cobra<span>Flow</span></div>
@@ -151,12 +164,31 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
   </div>
 </div>
 
+<!-- NUEVA CONTRASEÑA -->
+<div id="newpass-screen">
+  <div class="newpass-box fi">
+    <div class="login-logo">Cobra<span>Flow</span></div>
+    <div style="height:32px"></div>
+    <span class="newpass-label">Bienvenido a CobraFlow</span>
+    <div class="newpass-title">Elige tu contraseña</div>
+    <div class="newpass-sub">Crea una contraseña para acceder a tu panel cada vez que quieras.</div>
+    <label class="login-label">Nueva contraseña</label>
+    <input class="login-input" type="password" id="np1" placeholder="Mínimo 6 caracteres">
+    <label class="login-label">Repite la contraseña</label>
+    <input class="login-input" type="password" id="np2" placeholder="Repite tu contraseña">
+    <button class="login-btn" onclick="saveNewPassword()">Activar mi cuenta →</button>
+    <div class="newpass-error" id="nperr">Las contraseñas no coinciden</div>
+  </div>
+</div>
+
+<!-- LOADER -->
 <div id="loader-screen">
   <div class="loader-logo">Cobra<span>Flow</span></div>
   <div class="loader-msg" id="loader-msg">Conectando...</div>
   <div class="loader-track"><div class="loader-fill" id="loader-fill"></div></div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div class="sidebar">
     <div class="sidebar-logo">Cobra<span>Flow</span></div>
@@ -266,6 +298,78 @@ const PLANS={
 };
 
 let U=null,P=null,facts=[],deus=[],contacts=[];
+
+// ─── DETECTAR TOKEN DE RECUPERACIÓN EN LA URL ───────────────────────────────
+(async function checkRecoveryToken(){
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.replace('#',''));
+  const type = params.get('type');
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+
+  if((type === 'recovery' || type === 'invite') && accessToken){
+    // Establecer la sesión con el token del link mágico
+    await sb.auth.setSession({access_token: accessToken, refresh_token: refreshToken || ''});
+    // Ocultar login y mostrar pantalla de nueva contraseña
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('newpass-screen').style.display = 'flex';
+    // Limpiar la URL
+    window.history.replaceState(null, '', window.location.pathname);
+    return;
+  }
+
+  // Comprobar si ya hay sesión activa
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){
+    const {data:profile} = await sb.from('profiles').select('plan,display_name').eq('id',session.user.id).single();
+    const planKey = profile?.plan || 'basic';
+    const displayName = profile?.display_name || session.user.email;
+    initUser(session.user.email, planKey, displayName);
+  }
+})();
+
+async function saveNewPassword(){
+  const p1 = document.getElementById('np1').value;
+  const p2 = document.getElementById('np2').value;
+  const err = document.getElementById('nperr');
+  err.style.display = 'none';
+
+  if(p1.length < 6){
+    err.textContent = 'La contraseña debe tener al menos 6 caracteres';
+    err.style.display = 'block';
+    return;
+  }
+  if(p1 !== p2){
+    err.textContent = 'Las contraseñas no coinciden';
+    err.style.display = 'block';
+    return;
+  }
+
+  const btn = document.querySelector('#newpass-screen .login-btn');
+  btn.textContent = 'Activando cuenta...';
+  btn.disabled = true;
+
+  const {error} = await sb.auth.updateUser({password: p1});
+
+  if(error){
+    err.textContent = 'Error al guardar la contraseña. Inténtalo de nuevo.';
+    err.style.display = 'block';
+    btn.textContent = 'Activar mi cuenta →';
+    btn.disabled = false;
+    return;
+  }
+
+  // Contraseña guardada — cargar perfil y entrar al panel
+  const {data:{user}} = await sb.auth.getUser();
+  const {data:profile} = await sb.from('profiles').select('plan,display_name').eq('id',user.id).single();
+  const planKey = profile?.plan || 'basic';
+  const displayName = profile?.display_name || user.email;
+
+  document.getElementById('newpass-screen').style.display = 'none';
+  initUser(user.email, planKey, displayName);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function getDeudorName(val){
   if(!val) return "—";
   if(Array.isArray(val)){
@@ -330,6 +434,7 @@ function initUser(email, planKey, displayName){
   const ini=displayName?displayName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase():'CF';
   U={email, name:displayName||email, ini, plan:planK};
   document.getElementById('login-screen').style.display='none';
+  document.getElementById('newpass-screen').style.display='none';
   document.getElementById('uname').textContent=U.name;
   document.getElementById('uav').textContent=U.ini;
   document.getElementById('uplan').textContent='Plan '+P.label;
@@ -374,6 +479,7 @@ function applyPlan(){
 
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('le').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('np2').addEventListener('keydown',e=>{if(e.key==='Enter')saveNewPassword();});
 
 async function doLogout(){
   await sb.auth.signOut();
@@ -620,7 +726,6 @@ function openForm(type){
 
 function closeForm(){document.getElementById('fo').style.display='none';}
 
-// MODIFICADO: guarda cliente_id al crear factura
 async function saveFactura(){
   const num=document.getElementById('fn').value.trim();
   const imp=parseFloat(document.getElementById('fi').value);
@@ -641,7 +746,6 @@ async function saveFactura(){
   }catch{toast('Error al guardar. Verifica la conexión con Airtable.','error');}
 }
 
-// MODIFICADO: guarda cliente_id al crear deudor
 async function saveDeudor(){
   const n=document.getElementById('dn').value.trim();
   const e=document.getElementById('de2').value.trim();
@@ -664,7 +768,6 @@ function toast(msg,type='success'){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3500);
 }
-
 </script>
 </body>
 </html>
