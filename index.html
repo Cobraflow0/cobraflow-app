@@ -283,12 +283,14 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 <div class="toast" id="toast"><div class="tdot"></div><span id="tmsg">OK</span></div>
 
 <script>
-const AT='patdOyrlgbjnlj55G.d92469a6c38c369911b483b86dad0d7754bafa362c5367357dbd3bafa269df19';
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
+// Token de Airtable eliminado — ahora se gestiona de forma segura en Supabase Edge Function
 const BASE='apptDmnwtgFzoPRnq';
 const TF='tblz4beyHIaWZPn4Q';
 
 const SUPABASE_URL='https://wuqawfzkzwiyxieoovax.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cWF3ZnprendpeXhpZW9vdmF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjUxNDgsImV4cCI6MjA5NDcwMTE0OH0.2n3MwrYBddvPSZx68IYQBAqMpJYjkPcPAui8di9g7eM';
+const PROXY_URL=`${SUPABASE_URL}/functions/v1/airtable-proxy`;
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const PLANS={
@@ -308,17 +310,13 @@ let U=null,P=null,facts=[],deus=[],contacts=[];
   const refreshToken = params.get('refresh_token');
 
   if((type === 'recovery' || type === 'invite') && accessToken){
-    // Establecer la sesión con el token del link mágico
     await sb.auth.setSession({access_token: accessToken, refresh_token: refreshToken || ''});
-    // Ocultar login y mostrar pantalla de nueva contraseña
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('newpass-screen').style.display = 'flex';
-    // Limpiar la URL
     window.history.replaceState(null, '', window.location.pathname);
     return;
   }
 
-  // Comprobar si ya hay sesión activa
   const {data:{session}} = await sb.auth.getSession();
   if(session){
     const {data:profile} = await sb.from('profiles').select('plan,display_name').eq('id',session.user.id).single();
@@ -359,7 +357,6 @@ async function saveNewPassword(){
     return;
   }
 
-  // Contraseña guardada — cargar perfil y entrar al panel
   const {data:{user}} = await sb.auth.getUser();
   const {data:profile} = await sb.from('profiles').select('plan,display_name').eq('id',user.id).single();
   const planKey = profile?.plan || 'basic';
@@ -380,19 +377,50 @@ function getDeudorName(val){
   return val;
 }
 
+// ─── FUNCIONES AIRTABLE — ahora via Edge Function (token seguro en servidor) ──
 async function af(tbl,fml=''){
-  let url=`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}?pageSize=100`;
-  if(fml) url+=`&filterByFormula=${encodeURIComponent(fml)}`;
-  try{const r=await fetch(url,{headers:{Authorization:`Bearer ${AT}`}});if(!r.ok)return[];return(await r.json()).records||[];}catch{return[];}
+  let path=`${BASE}/${encodeURIComponent(tbl)}?pageSize=100`;
+  if(fml) path+=`&filterByFormula=${encodeURIComponent(fml)}`;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{
+      headers:{
+        'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`
+      }
+    });
+    if(!r.ok)return[];
+    return(await r.json()).records||[];
+  }catch{return[];}
 }
 async function ac(tbl,fields){
-  const r=await fetch(`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}`,{method:'POST',headers:{Authorization:`Bearer ${AT}`,'Content-Type':'application/json'},body:JSON.stringify({fields})});
-  if(!r.ok)throw new Error('err');return r.json();
+  const path=`${BASE}/${encodeURIComponent(tbl)}`;
+  const {data:{session}}=await sb.auth.getSession();
+  const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{
+    method:'POST',
+    headers:{
+      'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({fields})
+  });
+  if(!r.ok)throw new Error('err');
+  return r.json();
 }
 async function au(tbl,id,fields){
-  const r=await fetch(`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(tbl)}/${id}`,{method:'PATCH',headers:{Authorization:`Bearer ${AT}`,'Content-Type':'application/json'},body:JSON.stringify({fields})});
-  if(!r.ok)throw new Error('err');return r.json();
+  const path=`${BASE}/${encodeURIComponent(tbl)}/${id}`;
+  const {data:{session}}=await sb.auth.getSession();
+  const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{
+    method:'PATCH',
+    headers:{
+      'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({fields})
+  });
+  if(!r.ok)throw new Error('err');
+  return r.json();
 }
+// ─────────────────────────────────────────────────────────────────────────────
 
 const LOADER_MSGS=["Conectando...","Cargando facturas...","Leyendo deudores...","Preparando tu panel..."];
 let loaderAnim=null,loaderW=0,loaderMi=0;
