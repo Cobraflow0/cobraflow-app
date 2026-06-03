@@ -284,7 +284,6 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 
 <script>
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
-// Token de Airtable eliminado — ahora se gestiona de forma segura en Supabase Edge Function
 const BASE='apptDmnwtgFzoPRnq';
 const TF='tblz4beyHIaWZPn4Q';
 
@@ -377,7 +376,7 @@ function getDeudorName(val){
   return val;
 }
 
-// ─── FUNCIONES AIRTABLE — ahora via Edge Function (token seguro en servidor) ──
+// ─── FUNCIONES AIRTABLE — via Edge Function (token seguro en servidor) ────────
 async function af(tbl,fml=''){
   let path=`${BASE}/${encodeURIComponent(tbl)}?pageSize=100`;
   if(fml) path+=`&filterByFormula=${encodeURIComponent(fml)}`;
@@ -754,6 +753,7 @@ function openForm(type){
 
 function closeForm(){document.getElementById('fo').style.display='none';}
 
+// ─── SAVE FACTURA — calcula nivel automáticamente y guarda Emaildeudor ────────
 async function saveFactura(){
   const num=document.getElementById('fn').value.trim();
   const imp=parseFloat(document.getElementById('fi').value);
@@ -766,7 +766,30 @@ async function saveFactura(){
   try{
     const {data:{user}}=await sb.auth.getUser();
     const uid=user?user.id:'';
-    await ac(TF,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Nivel actual':'Nivel 1','Estado':'Pendiente','cliente_id':uid});
+
+    // Calcular días de retraso y nivel automáticamente
+    const hoy=new Date();
+    hoy.setHours(0,0,0,0);
+    const vencimiento=new Date(vn);
+    vencimiento.setHours(0,0,0,0);
+    const diasRetraso=Math.max(0,Math.floor((hoy-vencimiento)/(1000*60*60*24)));
+
+    let nivelActual='Nivel 1';
+    if(diasRetraso>=45) nivelActual='Nivel 4';
+    else if(diasRetraso>=30) nivelActual='Nivel 3';
+    else if(diasRetraso>=20) nivelActual='Nivel 2';
+    else nivelActual='Nivel 1';
+
+    await ac(TF,{
+      'Numero factura':num,
+      'Importe':imp,
+      'Fecha emision':em,
+      'Fecha vencimiento':vn,
+      'Nivel actual':nivelActual,
+      'Estado':'Pendiente',
+      'cliente_id':uid,
+      'Emaildeudor':eml
+    });
     toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');
     closeForm();
     const fml=uid?`{cliente_id}="${uid}"`:'';
