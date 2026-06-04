@@ -21,14 +21,14 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 /* LOGIN */
 #login-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;z-index:1000}
 #loader-screen{position:fixed;inset:0;background:var(--black);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999}
-.loader-logo{margin-bottom:6px}
-.loader-logo img{width:180px}
+.loader-logo{font-family:var(--font-display);font-size:40px;letter-spacing:0.04em;color:var(--off-white);margin-bottom:6px}
+.loader-logo span{color:var(--accent)}
 .loader-msg{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:28px;height:16px;transition:opacity 0.35s}
 .loader-track{width:240px;height:2px;background:rgba(242,239,232,0.08);border-radius:2px;overflow:hidden}
 .loader-fill{height:100%;width:0%;background:var(--accent);border-radius:2px}
 .login-box{width:400px;padding:48px}
-.login-logo{margin-bottom:8px}
-.login-logo img{width:160px}
+.login-logo{font-family:var(--font-display);font-size:36px;letter-spacing:0.02em;margin-bottom:8px}
+.login-logo span{color:var(--accent)}
 .login-sub{font-size:14px;color:var(--muted);margin-bottom:40px;font-weight:300}
 .login-label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block}
 .login-input{width:100%;background:var(--surface);border:0.5px solid var(--border2);border-radius:6px;padding:12px 16px;font-family:var(--font-body);font-size:14px;color:var(--off-white);outline:none;margin-bottom:16px;transition:border-color 0.2s}
@@ -51,8 +51,8 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 /* APP */
 #app{display:none;height:100vh;flex-direction:row}
 .sidebar{width:220px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;padding:24px 0;flex-shrink:0}
-.sidebar-logo{padding:0 20px 24px;border-bottom:0.5px solid var(--border)}
-.sidebar-logo img{width:120px}
+.sidebar-logo{font-family:var(--font-display);font-size:22px;letter-spacing:0.02em;padding:0 20px 24px;border-bottom:0.5px solid var(--border)}
+.sidebar-logo span{color:var(--accent)}
 .sidebar-nav{padding:16px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.15s;border-left:2px solid transparent}
 .nav-item:hover{color:var(--cream);background:rgba(242,239,232,0.03)}
@@ -151,7 +151,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box fi">
-    <div class="login-logo"><img src="https://raw.githubusercontent.com/Cobraflow0/cobraflow-app/main/logo.png" alt="CobraFlow"></div>
+    <div class="login-logo">Cobra<span>Flow</span></div>
     <div class="login-sub">Panel de gestión de cobros</div>
     <label class="login-label">Email</label>
     <input class="login-input" type="email" id="le" placeholder="tu@empresa.com">
@@ -167,7 +167,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 <!-- NUEVA CONTRASEÑA -->
 <div id="newpass-screen">
   <div class="newpass-box fi">
-    <div class="login-logo"><img src="https://raw.githubusercontent.com/Cobraflow0/cobraflow-app/main/logo.png" alt="CobraFlow"></div>
+    <div class="login-logo">Cobra<span>Flow</span></div>
     <div style="height:32px"></div>
     <span class="newpass-label">Bienvenido a CobraFlow</span>
     <div class="newpass-title">Elige tu contraseña</div>
@@ -183,7 +183,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 
 <!-- LOADER -->
 <div id="loader-screen">
-  <div class="loader-logo"><img src="https://raw.githubusercontent.com/Cobraflow0/cobraflow-app/main/logo.png" alt="CobraFlow"></div>
+  <div class="loader-logo">Cobra<span>Flow</span></div>
   <div class="loader-msg" id="loader-msg">Conectando...</div>
   <div class="loader-track"><div class="loader-fill" id="loader-fill"></div></div>
 </div>
@@ -191,7 +191,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 <!-- APP -->
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><img src="https://raw.githubusercontent.com/Cobraflow0/cobraflow-app/main/logo.png" alt="CobraFlow"></div>
+    <div class="sidebar-logo">Cobra<span>Flow</span></div>
     <nav class="sidebar-nav">
       <div class="nav-item active" onclick="go('dashboard')">◈ &nbsp;Panel</div>
       <div class="nav-item" onclick="go('facturas')">◻ &nbsp;Facturas</div>
