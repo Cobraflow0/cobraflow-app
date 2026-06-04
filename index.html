@@ -695,6 +695,7 @@ function showDetail(id){
     <div class="drow"><span class="dkey">Estado</span><span class="dval">${sbadge(p['Estado'])}</span></div>
     <div class="dactions">
       <button class="btn btn-primary" onclick="markCobrada('${id}')">✓ Marcar cobrada</button>
+      <button class="btn btn-secondary" onclick="editFactura('${id}')">✎ Editar</button>
       <button class="btn btn-secondary" onclick="closeDetail()">Cerrar</button>
       <button class="btn btn-danger" onclick="cancelFact('${id}')">Cancelar</button>
     </div>`;
@@ -810,6 +811,64 @@ async function saveDeudor(){
     const fml=uid?`{cliente_id}="${uid}"`:'';
     deus=await af('Deudores',fml);rdeus();
   }catch{toast('Error al guardar deudor','error');}
+}
+
+function editFactura(id){
+  const f=facts.find(x=>x.id===id);if(!f)return;
+  const p=f.fields;
+  document.getElementById('dp').innerHTML=`
+    <button class="cbtn" onclick="closeDetail()">×</button>
+    <div class="dtitle">Editar factura</div>
+    <div class="dsub" style="margin-bottom:20px">${p['Numero factura']||'Factura'}</div>
+    <div class="fsec" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;padding-bottom:8px;border-bottom:0.5px solid var(--border)">Datos de la factura</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <div class="ff"><label class="flabel">Número</label><input class="finput" id="ef-num" value="${p['Numero factura']||''}"></div>
+      <div class="ff"><label class="flabel">Importe (€)</label><input class="finput" id="ef-imp" type="number" value="${p['Importe']||''}"></div>
+      <div class="ff"><label class="flabel">Fecha emisión</label><input class="finput" id="ef-em" type="date" value="${p['Fecha emision']||''}"></div>
+      <div class="ff"><label class="flabel">Fecha vencimiento</label><input class="finput" id="ef-vn" type="date" value="${p['Fecha vencimiento']||''}"></div>
+      <div class="ff"><label class="flabel">Email del deudor</label><input class="finput" id="ef-eml" type="email" value="${p['Emaildeudor']||''}"></div>
+      <div class="ff"><label class="flabel">Nombre deudor</label><input class="finput" id="ef-deu" value="${p['Nombre deudor']||''}"></div>
+    </div>
+    <div class="dactions">
+      <button class="btn btn-primary" onclick="saveEditFactura('${id}')">Guardar cambios →</button>
+      <button class="btn btn-secondary" onclick="showDetail('${id}')">Cancelar</button>
+    </div>`;
+}
+
+async function saveEditFactura(id){
+  const num=document.getElementById('ef-num').value.trim();
+  const imp=parseFloat(document.getElementById('ef-imp').value);
+  const em=document.getElementById('ef-em').value;
+  const vn=document.getElementById('ef-vn').value;
+  const eml=document.getElementById('ef-eml').value.trim();
+  const deu=document.getElementById('ef-deu').value.trim();
+  if(!num||!imp||!em||!vn||!eml){toast('Rellena todos los campos obligatorios','error');return;}
+
+  // Recalcular días de retraso y nivel
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const vencimiento=new Date(vn);vencimiento.setHours(0,0,0,0);
+  const diasRetraso=Math.max(0,Math.floor((hoy-vencimiento)/(1000*60*60*24)));
+  let nivelActual='Nivel 1';
+  if(diasRetraso>=45) nivelActual='Nivel 4';
+  else if(diasRetraso>=30) nivelActual='Nivel 3';
+  else if(diasRetraso>=20) nivelActual='Nivel 2';
+  else nivelActual='Nivel 1';
+
+  try{
+    await au(TF,id,{
+      'Numero factura':num,
+      'Importe':imp,
+      'Fecha emision':em,
+      'Fecha vencimiento':vn,
+      'Emaildeudor':eml,
+      'Nivel actual':nivelActual
+    });
+    toast('Factura actualizada','success');
+    const {data:{user}}=await sb.auth.getUser();
+    const fml=user?`{cliente_id}="${user.id}"`:'';
+    facts=await af(TF,fml);
+    showDetail(id);rdash();rfacts();
+  }catch{toast('Error al guardar','error');}
 }
 
 function toast(msg,type='success'){
