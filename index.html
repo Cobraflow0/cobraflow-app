@@ -694,15 +694,38 @@ function showDetail(id){
     <div class="drow"><span class="dkey">Último contacto</span><span class="dval">${p['Fecha Ultimo contacto']||'Sin contacto'}</span></div>
     <div class="drow"><span class="dkey">Estado</span><span class="dval">${sbadge(p['Estado'])}</span></div>
     <div class="dactions">
-      <button class="btn btn-primary" onclick="markCobrada('${id}')">✓ Marcar cobrada</button>
+      ${p['Estado']==='Cobrada'||p['Estado']==='Cancelada'
+        ? `<button class="btn btn-amber" onclick="reactivarFact('${id}')">↺ Reactivar</button>`
+        : `<button class="btn btn-primary" onclick="markCobrada('${id}')">✓ Marcar cobrada</button>
+           <button class="btn btn-danger" onclick="cancelFact('${id}')">Cancelar</button>`
+      }
       <button class="btn btn-secondary" onclick="editFactura('${id}')">✎ Editar</button>
       <button class="btn btn-secondary" onclick="closeDetail()">Cerrar</button>
-      <button class="btn btn-danger" onclick="cancelFact('${id}')">Cancelar</button>
     </div>`;
   document.getElementById('do').style.display='flex';
 }
 
 function closeDetail(){document.getElementById('do').style.display='none';}
+
+async function reactivarFact(id){
+  try{
+    const f=facts.find(x=>x.id===id);if(!f)return;
+    const vn=f.fields['Fecha vencimiento'];
+    const hoy=new Date();hoy.setHours(0,0,0,0);
+    const vencimiento=new Date(vn);vencimiento.setHours(0,0,0,0);
+    const diasRetraso=Math.max(0,Math.floor((hoy-vencimiento)/(1000*60*60*24)));
+    let nivelActual='Nivel 1';
+    if(diasRetraso>=45) nivelActual='Nivel 4';
+    else if(diasRetraso>=30) nivelActual='Nivel 3';
+    else if(diasRetraso>=20) nivelActual='Nivel 2';
+    else nivelActual='Nivel 1';
+    await au(TF,id,{'Estado':'Pendiente','Nivel actual':nivelActual});
+    toast('Factura reactivada','success');closeDetail();
+    const {data:{user}}=await sb.auth.getUser();
+    const fml=user?`{cliente_id}="${user.id}"`:'';
+    facts=await af(TF,fml);rdash();rfacts();
+  }catch{toast('Error al reactivar','error');}
+}
 
 async function markCobrada(id){
   try{await au(TF,id,{'Estado':'Cobrada','Nivel actual':'Cobrada'});toast('Factura marcada como cobrada','success');closeDetail();
@@ -754,7 +777,7 @@ function openForm(type){
 
 function closeForm(){document.getElementById('fo').style.display='none';}
 
-// ─── SAVE FACTURA — calcula nivel automáticamente y guarda Emaildeudor ────────
+// ─── SAVE FACTURA — calcula nivel automáticamente, guarda Emaildeudor y crea deudor ──
 async function saveFactura(){
   const num=document.getElementById('fn').value.trim();
   const imp=parseFloat(document.getElementById('fi').value);
@@ -762,6 +785,8 @@ async function saveFactura(){
   const vn=document.getElementById('fv').value;
   const deu=document.getElementById('fd').value.trim();
   const eml=document.getElementById('fem').value.trim();
+  const tel=document.getElementById('ft2').value.trim();
+  const hist=document.getElementById('fh').value;
   if(!num||!imp||!em||!vn||!deu||!eml){toast('Rellena todos los campos obligatorios','error');return;}
   if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado. Actualiza tu plan.`,'error');return;}
   try{
@@ -781,6 +806,18 @@ async function saveFactura(){
     else if(diasRetraso>=20) nivelActual='Nivel 2';
     else nivelActual='Nivel 1';
 
+    // Crear deudor automáticamente si no existe ya
+    const deudorExistente=deus.find(d=>d.fields['Email deudor']===eml&&d.fields['cliente_id']===uid);
+    if(!deudorExistente){
+      await ac('Deudores',{
+        'Nombre del deudor':deu,
+        'Email deudor':eml,
+        'Teléfono':tel,
+        'Historial pagos':hist,
+        'cliente_id':uid
+      });
+    }
+
     await ac(TF,{
       'Numero factura':num,
       'Importe':imp,
@@ -794,7 +831,9 @@ async function saveFactura(){
     toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');
     closeForm();
     const fml=uid?`{cliente_id}="${uid}"`:'';
-    facts=await af(TF,fml);rdash();rfacts();
+    facts=await af(TF,fml);
+    deus=await af('Deudores',fml);
+    rdash();rfacts();rdeus();
   }catch{toast('Error al guardar. Verifica la conexión con Airtable.','error');}
 }
 
