@@ -311,6 +311,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
       <div class="topbar">
         <div class="page-title">Facturas</div>
         <div class="imp-topbar-btns">
+          <button class="btn btn-secondary" onclick="exportExcel()">↓ Exportar Excel</button>
           <button class="btn btn-secondary" id="btn-import-facturas" onclick="goImport()" style="display:none">⬆ Importar CSV / Excel</button>
           <button class="btn btn-primary" onclick="openForm('factura')">+ Nueva factura</button>
         </div>
@@ -1147,6 +1148,81 @@ async function impStartImport(){
   const fml=uid?`{cliente_id}="${uid}"`:'';
   facts=await af(TF,fml);
   deus=await af('Deudores',fml);
+}
+
+
+// ─── EXPORT EXCEL ─────────────────────────────────────────────────────────────
+function exportExcel(){
+  if(!facts.length){toast('No hay facturas para exportar','error');return;}
+
+  const hoy=new Date();
+  const fecha=hoy.toISOString().slice(0,10);
+
+  // Construir filas
+  const rows=facts.map(f=>{
+    const p=f.fields;
+    const deudorNombre=getDeudorName(p['Deudor']);
+    const deudorEmail=p['Emaildeudor']||'';
+    const dias=p['Dias de retraso']||0;
+    const nivel=p['Nivel actual']||'—';
+    const estado=p['Estado']||'Pendiente';
+    // Último email: de contacts
+    const emailsDeFactura=contacts.filter(c=>{
+      const ref=c.fields['Factura ref']||'';
+      return ref===p['Numero factura'];
+    });
+    const ultimoEmail=emailsDeFactura.length
+      ? emailsDeFactura.sort((a,b)=>new Date(b.fields['Fecha envio']||0)-new Date(a.fields['Fecha envio']||0))[0].fields['Fecha envio']||'—'
+      : '—';
+
+    return {
+      'Nº Factura':          p['Numero factura']||'—',
+      'Deudor':              deudorNombre,
+      'Empresa':             p['Nombre deudor']||'—',
+      'Email deudor':        deudorEmail,
+      'Importe (€)':         p['Importe']||0,
+      'Fecha emisión':       p['Fecha emision']||'—',
+      'Fecha vencimiento':   p['Fecha vencimiento']||'—',
+      'Días de retraso':     dias,
+      'Nivel actual':        nivel,
+      'Estado':              estado,
+      'Último email':        ultimoEmail,
+    };
+  });
+
+  // Hoja principal — todas las facturas
+  const ws=XLSX.utils.json_to_sheet(rows);
+
+  // Anchos de columna
+  ws['!cols']=[
+    {wch:14},{wch:22},{wch:22},{wch:28},
+    {wch:12},{wch:14},{wch:16},{wch:14},
+    {wch:12},{wch:12},{wch:14}
+  ];
+
+  // Hoja resumen
+  const activas=facts.filter(f=>f.fields['Estado']!=='Cobrada'&&f.fields['Estado']!=='Cancelada');
+  const cobradas=facts.filter(f=>f.fields['Estado']==='Cobrada');
+  const totalPendiente=activas.reduce((s,f)=>s+(f.fields['Importe']||0),0);
+  const totalCobrado=cobradas.reduce((s,f)=>s+(f.fields['Importe']||0),0);
+  const resumenData=[
+    {Concepto:'Fecha exportación', Valor:fecha},
+    {Concepto:'Plan', Valor:'Plan '+P.label},
+    {Concepto:'Total facturas', Valor:facts.length},
+    {Concepto:'Facturas activas', Valor:activas.length},
+    {Concepto:'Facturas cobradas', Valor:cobradas.length},
+    {Concepto:'Importe pendiente (€)', Valor:totalPendiente},
+    {Concepto:'Importe cobrado (€)', Valor:totalCobrado},
+    {Concepto:'Total deudores', Valor:deus.length},
+  ];
+  const wsRes=XLSX.utils.json_to_sheet(resumenData);
+  wsRes['!cols']=[{wch:24},{wch:20}];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Facturas');
+  XLSX.utils.book_append_sheet(wb,wsRes,'Resumen');
+  XLSX.writeFile(wb,`cobraflow_facturas_${fecha}.xlsx`);
+  toast('Excel descargado correctamente','success');
 }
 
 function impReset(){
