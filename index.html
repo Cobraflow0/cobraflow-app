@@ -270,6 +270,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
       <div class="nav-item" id="nav-import" onclick="goImport()">⬆ &nbsp;Importar</div>
       <div class="nav-item" id="nav-emails" onclick="goEmails()">✉ &nbsp;Emails enviados</div>
       <div class="nav-item" id="nav-reportes" onclick="goReportes()">▣ &nbsp;Reportes</div>
+      <div class="nav-item" onclick="go('config')">⚙ &nbsp;Configuración</div>
     </nav>
     <div class="sidebar-bottom">
       <div class="user-info">
@@ -356,6 +357,11 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
     <div id="s-reportes" style="display:none;flex-direction:column">
       <div class="topbar"><div class="page-title">Reportes mensuales</div></div>
       <div class="content" id="reportes-content"></div>
+    </div>
+
+    <div id="s-config" style="display:none;flex-direction:column">
+      <div class="topbar"><div class="page-title">Configuración</div></div>
+      <div class="content" id="config-content"></div>
     </div>
   </div>
 </div>
@@ -510,6 +516,7 @@ function initUser(email,planKey,displayName){
   document.getElementById('uplan').style.color=P.color;
   document.getElementById('lerr').style.display='none';
   applyPlan();
+  loadConfig();
   startLoader();
   loadAll();
 }
@@ -570,12 +577,12 @@ async function doLogout(){
 
 function go(name){
   if(!P)return;
-  ['dashboard','facturas','deudores','import','emails','reportes'].forEach(s=>{
+  ['dashboard','facturas','deudores','import','emails','reportes','config'].forEach(s=>{
     const el=document.getElementById('s-'+s);
     if(el)el.style.display=s===name?'flex':'none';
   });
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  const map={dashboard:0,facturas:1,deudores:2,import:3,emails:4,reportes:5};
+  const map={dashboard:0,facturas:1,deudores:2,import:3,emails:4,reportes:5,config:6};
   const navs=document.querySelectorAll('.nav-item');
   if(map[name]!==undefined&&navs[map[name]])navs[map[name]].classList.add('active');
   if(name==='dashboard')rdash();
@@ -584,6 +591,7 @@ function go(name){
   if(name==='import')rImport();
   if(name==='emails')remails();
   if(name==='reportes')rreportes();
+  if(name==='config')rConfig();
 }
 
 function goEmails(){
@@ -1434,6 +1442,103 @@ function toast(msg,type='success'){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3500);
 }
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
+let CFG = { empresa_nombre:'', empresa_email:'' };
+
+async function loadConfig(){
+  try{
+    const {data:{user}} = await sb.auth.getUser();
+    if(!user) return;
+    const {data} = await sb.from('profiles').select('empresa_nombre,empresa_email,display_name').eq('id',user.id).single();
+    if(data){
+      CFG.empresa_nombre = data.empresa_nombre || '';
+      CFG.empresa_email  = data.empresa_email  || '';
+    }
+  }catch(e){ console.warn('loadConfig error',e); }
+}
+
+async function rConfig(){
+  const {data:{user}} = await sb.auth.getUser();
+  const c = document.getElementById('config-content');
+  c.innerHTML = `
+    <div style="max-width:560px">
+
+      <!-- Remitente -->
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:24px;margin-bottom:16px">
+        <div class="fsec" style="margin-top:0">Remitente de los emails de cobro</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.7">
+          El nombre y email que verán tus clientes deudores cuando reciban un email de cobro.<br>
+          Si lo dejas vacío, los emails saldrán como <span style="color:var(--cream);font-family:var(--font-mono)">CobraFlow</span>.
+        </div>
+        <div class="ftip" style="margin-bottom:20px">
+          <span style="color:var(--accent)">→</span>
+          <span>El deudor verá "<strong style="color:var(--off-white)" id="cfg-preview-name">${CFG.empresa_nombre||'Tu empresa'}</strong>" como remitente. Si responde, el email llega a tu dirección.</span>
+        </div>
+        <div class="fgrid">
+          <div class="ff full">
+            <label class="flabel">Nombre de tu empresa</label>
+            <input class="finput" id="cfg-nombre" placeholder="Construcciones García SL" value="${CFG.empresa_nombre||''}"
+              oninput="document.getElementById('cfg-preview-name').textContent=this.value||'Tu empresa'">
+          </div>
+          <div class="ff full">
+            <label class="flabel">Email de respuesta (Reply-To)</label>
+            <input class="finput" id="cfg-email" type="email" placeholder="pagos@tuempresa.es" value="${CFG.empresa_email||''}">
+            <span style="font-size:11px;color:var(--muted);margin-top:4px">Cuando el deudor responda al email, la respuesta llegará aquí</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuenta -->
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:24px;margin-bottom:16px">
+        <div class="fsec" style="margin-top:0">Tu cuenta</div>
+        <div class="drow"><span class="dkey">Email de acceso</span><span class="dval" style="font-family:var(--font-mono);font-size:12px">${user?.email||'—'}</span></div>
+        <div class="drow"><span class="dkey">Plan actual</span><span class="dval" style="color:${P.color}">${P.label}</span></div>
+        <div class="drow" style="border:none"><span class="dkey">Cambiar contraseña</span>
+          <button class="btn btn-secondary" style="padding:5px 12px;font-size:11px" onclick="sendResetEmail()">Enviar enlace →</button>
+        </div>
+      </div>
+
+      <!-- Guardar -->
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="saveConfig()">Guardar configuración →</button>
+      </div>
+      <div id="cfg-saved" style="display:none;margin-top:12px;font-size:12px;color:var(--accent);font-family:var(--font-mono)">✓ Guardado correctamente</div>
+    </div>
+  `;
+}
+
+async function saveConfig(){
+  const nombre = document.getElementById('cfg-nombre').value.trim();
+  const email  = document.getElementById('cfg-email').value.trim();
+
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    toast('El email de respuesta no es válido','error');
+    return;
+  }
+
+  try{
+    const {data:{user}} = await sb.auth.getUser();
+    const {error} = await sb.from('profiles')
+      .upsert({id: user.id, empresa_nombre: nombre, empresa_email: email}, {onConflict:'id'});
+    if(error) throw error;
+    CFG.empresa_nombre = nombre;
+    CFG.empresa_email  = email;
+    document.getElementById('cfg-saved').style.display='block';
+    setTimeout(()=>{ const el=document.getElementById('cfg-saved'); if(el) el.style.display='none'; },3000);
+    toast('Configuración guardada','success');
+  }catch(e){
+    toast('Error al guardar. Inténtalo de nuevo.','error');
+    console.error(e);
+  }
+}
+
+async function sendResetEmail(){
+  const {data:{user}} = await sb.auth.getUser();
+  await sb.auth.resetPasswordForEmail(user.email);
+  toast('Enlace de cambio de contraseña enviado a tu email','success');
+}
+
+
 </script>
 </body>
 </html>
