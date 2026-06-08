@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -71,6 +72,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:6px;font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;border:none}
 .btn-primary{background:var(--accent);color:var(--black)}
 .btn-primary:hover{background:var(--accent-dim)}
+.btn-primary:disabled{background:var(--muted);cursor:not-allowed;color:var(--black)}
 .btn-secondary{background:transparent;color:var(--muted);border:0.5px solid var(--border2)}
 .btn-secondary:hover{color:var(--off-white)}
 .btn-danger{background:transparent;color:var(--red);border:0.5px solid rgba(232,64,64,0.3)}
@@ -144,6 +146,75 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
 .toast.error .tdot{background:var(--red)}
 @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fi{animation:fi 0.25s ease forwards}
+
+/* ── IMPORT CSV/EXCEL ─────────────────────────────────────────────────────── */
+.imp-topbar-btns{display:flex;align-items:center;gap:10px}
+
+/* Drop zone */
+.imp-drop{border:0.5px dashed var(--border2);border-radius:8px;background:var(--surface);padding:36px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;position:relative;margin-bottom:12px}
+.imp-drop.dragover{border-color:var(--accent);background:rgba(212,255,74,0.04)}
+.imp-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.imp-drop-icon{font-size:28px;margin-bottom:10px;opacity:0.5}
+.imp-drop-title{font-size:14px;font-weight:500;color:var(--cream);margin-bottom:4px}
+.imp-drop-sub{font-size:12px;color:var(--muted)}
+.imp-formats{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.imp-pill{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:20px;background:var(--surface2);border:0.5px solid var(--border2);color:var(--muted)}
+.imp-template{font-size:11px;color:var(--muted);text-align:center;margin-bottom:24px}
+.imp-template a{color:var(--accent);text-decoration:none;font-weight:500}
+.imp-template a:hover{text-decoration:underline}
+
+/* Mapping */
+.imp-section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin:20px 0 12px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
+.imp-mapping-grid{display:grid;grid-template-columns:1fr 24px 1fr;gap:6px 0;align-items:center;margin-bottom:20px}
+.imp-col-src{font-family:var(--font-mono);font-size:11px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:4px;padding:5px 10px;color:var(--muted)}
+.imp-col-ok{font-family:var(--font-mono);font-size:11px;background:rgba(212,255,74,0.08);border:0.5px solid rgba(212,255,74,0.2);border-radius:4px;padding:5px 10px;color:var(--accent)}
+.imp-col-warn{font-family:var(--font-mono);font-size:11px;background:rgba(239,159,39,0.08);border:0.5px solid rgba(239,159,39,0.2);border-radius:4px;padding:5px 10px;color:var(--amber)}
+.imp-arrow{text-align:center;color:var(--muted);font-size:12px}
+
+/* Preview table */
+.imp-preview-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:0.5px solid var(--border)}
+.imp-preview-title{font-size:13px;font-weight:500;color:var(--cream)}
+.imp-stats{display:flex;gap:14px;font-size:11px;font-family:var(--font-mono)}
+.imp-stat{display:flex;align-items:center;gap:5px;color:var(--muted)}
+.imp-sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.imp-table-wrap{overflow-x:auto;max-height:300px;overflow-y:auto}
+.imp-table{width:100%;border-collapse:collapse;font-size:12px}
+.imp-table thead th{position:sticky;top:0;z-index:2;background:var(--surface2);font-weight:500;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;text-align:left;padding:8px 14px;border-bottom:0.5px solid var(--border);color:var(--muted);white-space:nowrap}
+.imp-table tbody tr{border-bottom:0.5px solid rgba(242,239,232,0.04)}
+.imp-table tbody tr:last-child{border-bottom:none}
+.imp-table tbody tr:hover{background:rgba(242,239,232,0.02)}
+.imp-table tbody tr.row-err{background:rgba(232,64,64,0.04)}
+.imp-table tbody tr.row-warn{background:rgba(239,159,39,0.04)}
+.imp-table td{padding:7px 14px;color:var(--cream);font-size:12px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.imp-rnum{color:var(--muted);font-family:var(--font-mono);font-size:10px;width:32px}
+.imp-cerr{background:rgba(232,64,64,0.15);color:var(--red);border-radius:3px;padding:1px 6px;font-family:var(--font-mono);font-size:10px}
+.imp-cwarn{background:rgba(239,159,39,0.12);color:var(--amber);border-radius:3px;padding:1px 6px;font-family:var(--font-mono);font-size:10px}
+.imp-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-mono);padding:2px 7px;border-radius:20px}
+.imp-chip-ok{background:rgba(212,255,74,0.1);color:var(--accent)}
+.imp-chip-err{background:rgba(232,64,64,0.12);color:var(--red)}
+.imp-chip-warn{background:rgba(239,159,39,0.12);color:var(--amber)}
+
+/* Action bar */
+.imp-action-bar{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.imp-info{background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.imp-info strong{color:var(--off-white)}
+.imp-btn-row{display:flex;gap:10px}
+
+/* Progress */
+.imp-progress{background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:20px;margin-top:16px}
+.imp-progress-title{font-size:13px;font-weight:500;color:var(--cream);margin-bottom:8px}
+.imp-bar-track{background:var(--surface2);border-radius:100px;height:3px;overflow:hidden;margin-bottom:8px}
+.imp-bar-fill{height:100%;background:var(--accent);border-radius:100px;width:0%;transition:width 0.3s ease}
+.imp-progress-text{font-size:11px;color:var(--muted);font-family:var(--font-mono)}
+
+/* Success */
+.imp-success{background:rgba(212,255,74,0.06);border:0.5px solid rgba(212,255,74,0.2);border-radius:8px;padding:28px;text-align:center;margin-top:16px}
+.imp-success-icon{font-size:28px;margin-bottom:10px}
+.imp-success-title{font-family:var(--font-display);font-size:24px;letter-spacing:0.02em;color:var(--accent);margin-bottom:6px}
+.imp-success-sub{font-size:12px;color:var(--muted)}
+
+/* Error summary */
+.imp-err-summary{background:rgba(232,64,64,0.06);border:0.5px solid rgba(232,64,64,0.2);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--red);margin-top:10px}
 </style>
 </head>
 <body>
@@ -196,6 +267,7 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
       <div class="nav-item active" onclick="go('dashboard')">◈ &nbsp;Panel</div>
       <div class="nav-item" onclick="go('facturas')">◻ &nbsp;Facturas</div>
       <div class="nav-item" onclick="go('deudores')">◯ &nbsp;Deudores</div>
+      <div class="nav-item" id="nav-import" onclick="goImport()">⬆ &nbsp;Importar</div>
       <div class="nav-item" id="nav-emails" onclick="goEmails()">✉ &nbsp;Emails enviados</div>
       <div class="nav-item" id="nav-reportes" onclick="goReportes()">▣ &nbsp;Reportes</div>
     </nav>
@@ -236,7 +308,13 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
     </div>
 
     <div id="s-facturas" style="display:none;flex-direction:column">
-      <div class="topbar"><div class="page-title">Facturas</div><button class="btn btn-primary" onclick="openForm('factura')">+ Nueva factura</button></div>
+      <div class="topbar">
+        <div class="page-title">Facturas</div>
+        <div class="imp-topbar-btns">
+          <button class="btn btn-secondary" id="btn-import-facturas" onclick="goImport()" style="display:none">⬆ Importar CSV / Excel</button>
+          <button class="btn btn-primary" onclick="openForm('factura')">+ Nueva factura</button>
+        </div>
+      </div>
       <div class="content">
         <div class="table-wrap">
           <div class="th-row fg"><span>Nº factura</span><span>Deudor</span><span>Importe</span><span>Estado</span><span>Nivel</span><span>Días retraso</span></div>
@@ -253,6 +331,15 @@ html,body{height:100%;font-family:var(--font-body);background:var(--black);color
           <div id="deut"><div class="loading">Cargando...</div></div>
         </div>
       </div>
+    </div>
+
+    <!-- IMPORT SECTION -->
+    <div id="s-import" style="display:none;flex-direction:column">
+      <div class="topbar">
+        <div class="page-title">Importar facturas</div>
+        <button class="btn btn-secondary" onclick="impReset()">↺ Nuevo archivo</button>
+      </div>
+      <div class="content" id="import-content"></div>
     </div>
 
     <div id="s-emails" style="display:none;flex-direction:column">
@@ -293,100 +380,79 @@ const PROXY_URL=`${SUPABASE_URL}/functions/v1/airtable-proxy`;
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const PLANS={
-  basic:   {label:'Basic',   color:'#888780',max:10,   niveles:[1,2],    emails:false,reportes:false},
-  pro:     {label:'Pro',     color:'#d4ff4a',max:50,   niveles:[1,2,3,4],emails:true, reportes:false},
-  business:{label:'Business',color:'#ef9f27',max:99999,niveles:[1,2,3,4],emails:true, reportes:true}
+  basic:   {label:'Basic',   color:'#888780',max:10,   niveles:[1,2],    emails:false,reportes:false,import:false},
+  pro:     {label:'Pro',     color:'#d4ff4a',max:50,   niveles:[1,2,3,4],emails:true, reportes:false,import:true},
+  business:{label:'Business',color:'#ef9f27',max:99999,niveles:[1,2,3,4],emails:true, reportes:true, import:true}
 };
 
 let U=null,P=null,facts=[],deus=[],contacts=[];
 
+// ─── IMPORT STATE ─────────────────────────────────────────────────────────────
+let impParsed=[],impMapping={},impValid=[];
+
+const IMP_FIELDS={
+  'Nombre deudor':['nombre deudor','nombre','deudor','cliente','name','debtor'],
+  'Empresa':      ['empresa','company','razon social','razón social','sociedad'],
+  'Email':        ['email','correo','e-mail','mail','email deudor'],
+  'Importe':      ['importe','amount','total','valor','precio','importe eur'],
+  'Fecha factura':['fecha factura','fecha','date','fecha vencimiento','vencimiento','fecha emision','fecha emisión'],
+};
+
 // ─── DETECTAR TOKEN DE RECUPERACIÓN EN LA URL ───────────────────────────────
 (async function checkRecoveryToken(){
-  const hash = window.location.hash;
-  const params = new URLSearchParams(hash.replace('#',''));
-  const type = params.get('type');
-  const accessToken = params.get('access_token');
-  const refreshToken = params.get('refresh_token');
-
-  if((type === 'recovery' || type === 'invite') && accessToken){
-    await sb.auth.setSession({access_token: accessToken, refresh_token: refreshToken || ''});
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('newpass-screen').style.display = 'flex';
-    window.history.replaceState(null, '', window.location.pathname);
+  const hash=window.location.hash;
+  const params=new URLSearchParams(hash.replace('#',''));
+  const type=params.get('type');
+  const accessToken=params.get('access_token');
+  const refreshToken=params.get('refresh_token');
+  if((type==='recovery'||type==='invite')&&accessToken){
+    await sb.auth.setSession({access_token:accessToken,refresh_token:refreshToken||''});
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('newpass-screen').style.display='flex';
+    window.history.replaceState(null,'',window.location.pathname);
     return;
   }
-
-  const {data:{session}} = await sb.auth.getSession();
+  const {data:{session}}=await sb.auth.getSession();
   if(session){
-    const {data:profile} = await sb.from('profiles').select('plan,display_name').eq('id',session.user.id).single();
-    const planKey = profile?.plan || 'basic';
-    const displayName = profile?.display_name || session.user.email;
-    initUser(session.user.email, planKey, displayName);
+    const {data:profile}=await sb.from('profiles').select('plan,display_name').eq('id',session.user.id).single();
+    const planKey=profile?.plan||'basic';
+    const displayName=profile?.display_name||session.user.email;
+    initUser(session.user.email,planKey,displayName);
   }
 })();
 
 async function saveNewPassword(){
-  const p1 = document.getElementById('np1').value;
-  const p2 = document.getElementById('np2').value;
-  const err = document.getElementById('nperr');
-  err.style.display = 'none';
-
-  if(p1.length < 6){
-    err.textContent = 'La contraseña debe tener al menos 6 caracteres';
-    err.style.display = 'block';
-    return;
-  }
-  if(p1 !== p2){
-    err.textContent = 'Las contraseñas no coinciden';
-    err.style.display = 'block';
-    return;
-  }
-
-  const btn = document.querySelector('#newpass-screen .login-btn');
-  btn.textContent = 'Activando cuenta...';
-  btn.disabled = true;
-
-  const {error} = await sb.auth.updateUser({password: p1});
-
-  if(error){
-    err.textContent = 'Error al guardar la contraseña. Inténtalo de nuevo.';
-    err.style.display = 'block';
-    btn.textContent = 'Activar mi cuenta →';
-    btn.disabled = false;
-    return;
-  }
-
-  const {data:{user}} = await sb.auth.getUser();
-  const {data:profile} = await sb.from('profiles').select('plan,display_name').eq('id',user.id).single();
-  const planKey = profile?.plan || 'basic';
-  const displayName = profile?.display_name || user.email;
-
-  document.getElementById('newpass-screen').style.display = 'none';
-  initUser(user.email, planKey, displayName);
+  const p1=document.getElementById('np1').value;
+  const p2=document.getElementById('np2').value;
+  const err=document.getElementById('nperr');
+  err.style.display='none';
+  if(p1.length<6){err.textContent='La contraseña debe tener al menos 6 caracteres';err.style.display='block';return;}
+  if(p1!==p2){err.textContent='Las contraseñas no coinciden';err.style.display='block';return;}
+  const btn=document.querySelector('#newpass-screen .login-btn');
+  btn.textContent='Activando cuenta...';btn.disabled=true;
+  const {error}=await sb.auth.updateUser({password:p1});
+  if(error){err.textContent='Error al guardar la contraseña. Inténtalo de nuevo.';err.style.display='block';btn.textContent='Activar mi cuenta →';btn.disabled=false;return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {data:profile}=await sb.from('profiles').select('plan,display_name').eq('id',user.id).single();
+  const planKey=profile?.plan||'basic';
+  const displayName=profile?.display_name||user.email;
+  document.getElementById('newpass-screen').style.display='none';
+  initUser(user.email,planKey,displayName);
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 function getDeudorName(val){
-  if(!val) return "—";
-  if(Array.isArray(val)){
-    const id=val[0];
-    const d=deus.find(x=>x.id===id);
-    return d?d.fields["Nombre del deudor"]:"—";
-  }
+  if(!val)return"—";
+  if(Array.isArray(val)){const id=val[0];const d=deus.find(x=>x.id===id);return d?d.fields["Nombre del deudor"]:"—";}
   return val;
 }
 
-// ─── FUNCIONES AIRTABLE — via Edge Function (token seguro en servidor) ────────
+// ─── FUNCIONES AIRTABLE ───────────────────────────────────────────────────────
 async function af(tbl,fml=''){
   let path=`${BASE}/${encodeURIComponent(tbl)}?pageSize=100`;
-  if(fml) path+=`&filterByFormula=${encodeURIComponent(fml)}`;
+  if(fml)path+=`&filterByFormula=${encodeURIComponent(fml)}`;
   try{
     const {data:{session}}=await sb.auth.getSession();
-    const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{
-      headers:{
-        'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`
-      }
-    });
+    const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{headers:{'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`}});
     if(!r.ok)return[];
     return(await r.json()).records||[];
   }catch{return[];}
@@ -394,72 +460,47 @@ async function af(tbl,fml=''){
 async function ac(tbl,fields){
   const path=`${BASE}/${encodeURIComponent(tbl)}`;
   const {data:{session}}=await sb.auth.getSession();
-  const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{
-    method:'POST',
-    headers:{
-      'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`,
-      'Content-Type':'application/json'
-    },
-    body:JSON.stringify({fields})
-  });
+  const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{method:'POST',headers:{'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({fields})});
   if(!r.ok)throw new Error('err');
   return r.json();
 }
 async function au(tbl,id,fields){
   const path=`${BASE}/${encodeURIComponent(tbl)}/${id}`;
   const {data:{session}}=await sb.auth.getSession();
-  const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{
-    method:'PATCH',
-    headers:{
-      'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`,
-      'Content-Type':'application/json'
-    },
-    body:JSON.stringify({fields})
-  });
+  const r=await fetch(`${PROXY_URL}?path=${encodeURIComponent(path)}`,{method:'PATCH',headers:{'Authorization':`Bearer ${session?.access_token||SUPABASE_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({fields})});
   if(!r.ok)throw new Error('err');
   return r.json();
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
+// ─── LOADER ───────────────────────────────────────────────────────────────────
 const LOADER_MSGS=["Conectando...","Cargando facturas...","Leyendo deudores...","Preparando tu panel..."];
 let loaderAnim=null,loaderW=0,loaderMi=0;
-
 function startLoader(){
   const screen=document.getElementById('loader-screen');
   const fill=document.getElementById('loader-fill');
   const msg=document.getElementById('loader-msg');
-  screen.style.display='flex';
-  loaderW=0;loaderMi=0;
-  msg.textContent=LOADER_MSGS[0];
-  fill.style.transition='none';
-  fill.style.width='0%';
+  screen.style.display='flex';loaderW=0;loaderMi=0;
+  msg.textContent=LOADER_MSGS[0];fill.style.transition='none';fill.style.width='0%';
   function tick(){
-    loaderW+=0.5;
-    if(loaderW>95)loaderW=95;
-    fill.style.width=loaderW+'%';
+    loaderW+=0.5;if(loaderW>95)loaderW=95;fill.style.width=loaderW+'%';
     const idx=Math.min(Math.floor(loaderW/100*LOADER_MSGS.length),LOADER_MSGS.length-1);
     if(idx!==loaderMi){loaderMi=idx;msg.style.opacity=0;setTimeout(()=>{msg.textContent=LOADER_MSGS[loaderMi];msg.style.opacity=1;},200);}
     loaderAnim=requestAnimationFrame(tick);
   }
   loaderAnim=requestAnimationFrame(tick);
 }
-
 function stopLoader(){
-  if(loaderAnim) cancelAnimationFrame(loaderAnim);
+  if(loaderAnim)cancelAnimationFrame(loaderAnim);
   const fill=document.getElementById('loader-fill');
-  fill.style.transition='width 0.3s ease';
-  fill.style.width='100%';
-  setTimeout(()=>{
-    document.getElementById('loader-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-  },350);
+  fill.style.transition='width 0.3s ease';fill.style.width='100%';
+  setTimeout(()=>{document.getElementById('loader-screen').style.display='none';document.getElementById('app').style.display='flex';},350);
 }
 
-function initUser(email, planKey, displayName){
+function initUser(email,planKey,displayName){
   const planK=(planKey||'basic').toLowerCase();
   P=PLANS[planK]||PLANS['basic'];
   const ini=displayName?displayName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase():'CF';
-  U={email, name:displayName||email, ini, plan:planK};
+  U={email,name:displayName||email,ini,plan:planK};
   document.getElementById('login-screen').style.display='none';
   document.getElementById('newpass-screen').style.display='none';
   document.getElementById('uname').textContent=U.name;
@@ -484,13 +525,21 @@ async function doLogin(){
     const planKey=profile?.plan||'basic';
     const displayName=profile?.display_name||email;
     initUser(email,planKey,displayName);
-  }catch(e){
-    document.getElementById('lerr').style.display='block';
-  }
+  }catch(e){document.getElementById('lerr').style.display='block';}
   btn.textContent='Entrar al panel →';btn.disabled=false;
 }
 
 function applyPlan(){
+  // Import: solo Pro y Business
+  if(!P.import){
+    const el=document.getElementById('nav-import');
+    el.classList.add('locked');
+    el.title='Disponible desde el plan Pro';
+  } else {
+    // Mostrar botón en topbar de facturas también
+    const btn=document.getElementById('btn-import-facturas');
+    if(btn) btn.style.display='inline-flex';
+  }
   if(!P.emails){
     const el=document.getElementById('nav-emails');
     el.classList.add('locked');
@@ -501,7 +550,7 @@ function applyPlan(){
     el.classList.add('locked');
     el.title='Disponible en el plan Business';
   }
-  if(P.max<99999) document.getElementById('limit-wrap').style.display='block';
+  if(P.max<99999)document.getElementById('limit-wrap').style.display='block';
 }
 
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -509,31 +558,31 @@ document.getElementById('le').addEventListener('keydown',e=>{if(e.key==='Enter')
 document.getElementById('np2').addEventListener('keydown',e=>{if(e.key==='Enter')saveNewPassword();});
 
 async function doLogout(){
-  await sb.auth.signOut();
-  U=null;P=null;
+  await sb.auth.signOut();U=null;P=null;
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
-  document.getElementById('le').value='';
-  document.getElementById('lp').value='';
+  document.getElementById('le').value='';document.getElementById('lp').value='';
   document.getElementById('nav-emails').classList.remove('locked');
   document.getElementById('nav-reportes').classList.remove('locked');
+  document.getElementById('nav-import').classList.remove('locked');
 }
 
 function go(name){
-  if(!P) return;
-  ['dashboard','facturas','deudores','emails','reportes'].forEach(s=>{
+  if(!P)return;
+  ['dashboard','facturas','deudores','import','emails','reportes'].forEach(s=>{
     const el=document.getElementById('s-'+s);
-    if(el) el.style.display=s===name?'flex':'none';
+    if(el)el.style.display=s===name?'flex':'none';
   });
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  const map={dashboard:0,facturas:1,deudores:2,emails:3,reportes:4};
+  const map={dashboard:0,facturas:1,deudores:2,import:3,emails:4,reportes:5};
   const navs=document.querySelectorAll('.nav-item');
-  if(map[name]!==undefined&&navs[map[name]]) navs[map[name]].classList.add('active');
-  if(name==='dashboard') rdash();
-  if(name==='facturas') rfacts();
-  if(name==='deudores') rdeus();
-  if(name==='emails') remails();
-  if(name==='reportes') rreportes();
+  if(map[name]!==undefined&&navs[map[name]])navs[map[name]].classList.add('active');
+  if(name==='dashboard')rdash();
+  if(name==='facturas')rfacts();
+  if(name==='deudores')rdeus();
+  if(name==='import')rImport();
+  if(name==='emails')remails();
+  if(name==='reportes')rreportes();
 }
 
 function goEmails(){
@@ -544,18 +593,26 @@ function goReportes(){
   if(!P.reportes){toast('Disponible en el plan Business (199€/mes)','error');return;}
   go('reportes');
 }
+function goImport(){
+  if(!P.import){toast('La importación masiva está disponible desde el plan Pro (99€/mes)','error');return;}
+  go('import');
+}
 
 async function loadAll(){
-  const {data:{user}} = await sb.auth.getUser();
-  const uid = user ? user.id : null;
-  const fml = uid ? `{cliente_id}="${uid}"` : '';
-  facts=await af(TF, fml);
-  deus=await af('Deudores', fml);
+  const {data:{user}}=await sb.auth.getSession().then(r=>r);
+  const uid=user?user.id:null;
+  // obtener user correctamente
+  const {data:{user:u2}}=await sb.auth.getUser();
+  const uid2=u2?u2.id:null;
+  const fml=uid2?`{cliente_id}="${uid2}"`:'';
+  facts=await af(TF,fml);
+  deus=await af('Deudores',fml);
   contacts=await af('Contactos');
   stopLoader();
   rdash();
 }
 
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
 function nc(n){
   if(!n)return'#5a5a52';
   if(n.includes('1'))return'#d4ff4a';
@@ -565,15 +622,14 @@ function nc(n){
   if(n==='Cobrada')return'#d4ff4a';
   return'#5a5a52';
 }
-
 function sbadge(e){
   if(e==='Cobrada')return'<span class="badge bc">Cobrada</span>';
   if(e==='En proceso')return'<span class="badge bpr">En proceso</span>';
   if(e==='Cancelada')return'<span class="badge bx">Cancelada</span>';
   return'<span class="badge bp">Pendiente</span>';
 }
-
 function eur(v){if(!v)return'—';return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:0}).format(v);}
+function empty(msg){return`<div class="empty"><div style="font-size:28px;opacity:0.2;margin-bottom:10px">◻</div><div style="font-size:13px">${msg}</div></div>`;}
 
 function frow(f){
   const p=f.fields;
@@ -595,7 +651,7 @@ function frow(f){
 }
 
 function rdash(){
-  if(!P) return;
+  if(!P)return;
   const act=facts.filter(f=>f.fields['Estado']!=='Cobrada'&&f.fields['Estado']!=='Cancelada');
   const cob=facts.filter(f=>f.fields['Estado']==='Cobrada');
   document.getElementById('mp').textContent=eur(act.reduce((s,f)=>s+(f.fields['Importe']||0),0));
@@ -635,16 +691,14 @@ function remails(){
   if(!P.emails){
     document.getElementById('et').innerHTML=`<div style="padding:40px;text-align:center">
       <div style="font-family:var(--font-display);font-size:24px;color:var(--amber);margin-bottom:10px">Plan Pro o superior</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:20px">El tracking de emails y apertura de mensajes está disponible desde el plan Pro (99€/mes).</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px">El tracking de emails está disponible desde el plan Pro (99€/mes).</div>
       <button class="btn btn-amber">Actualizar a Pro →</button>
     </div>`;
     return;
   }
   if(!contacts.length){document.getElementById('et').innerHTML=empty('No hay emails enviados aún.');return;}
   document.getElementById('et').innerHTML=contacts.map(c=>{
-    const p=c.fields;
-    const nivel=p['Nivel']||'—';
-    const co=nc(nivel);
+    const p=c.fields;const nivel=p['Nivel']||'—';const co=nc(nivel);
     return `<div class="tr eg fi">
       <div class="cell m b">${p['Factura ref']||'—'}</div>
       <div class="cell" style="font-size:12px">${p['Asunto']||'—'}</div>
@@ -661,10 +715,10 @@ function rreportes(){
   if(!P.reportes){
     c.innerHTML=`<div class="upgrade-box">
       <div class="upgrade-title">Plan Business</div>
-      <div class="upgrade-text">Los reportes mensuales automáticos con resumen de cobros, deudores y análisis están disponibles en el plan Business (199€/mes).<br>Incluye informe mensual automático + soporte prioritario.</div>
+      <div class="upgrade-text">Los reportes mensuales automáticos están disponibles en el plan Business (199€/mes).<br>Incluye informe mensual automático + soporte prioritario.</div>
       <button class="btn btn-amber">Actualizar a Business →</button>
     </div>`;
-  } else {
+  }else{
     c.innerHTML=`<div class="empty" style="padding-top:60px">
       <div style="font-size:32px;opacity:0.3;margin-bottom:12px">▣</div>
       <div style="font-size:14px;color:var(--muted)">Los reportes se generan automáticamente el día 1 de cada mes y llegan a tu email.</div>
@@ -672,8 +726,307 @@ function rreportes(){
   }
 }
 
-function empty(msg){return`<div class="empty"><div style="font-size:28px;opacity:0.2;margin-bottom:10px">◻</div><div style="font-size:13px">${msg}</div></div>`;}
+// ─── IMPORT CSV/EXCEL ─────────────────────────────────────────────────────────
+function rImport(){
+  if(!P.import){
+    document.getElementById('import-content').innerHTML=`<div class="upgrade-box">
+      <div class="upgrade-title">Plan Pro o Business</div>
+      <div class="upgrade-text">La importación masiva de facturas desde CSV o Excel está disponible en los planes Pro (99€/mes) y Business (199€/mes).<br>Importa cientos de facturas en segundos sin teclear nada.</div>
+      <button class="btn btn-amber">Actualizar a Pro →</button>
+    </div>`;
+    return;
+  }
 
+  // Reset estado
+  impParsed=[];impMapping={};impValid=[];
+
+  document.getElementById('import-content').innerHTML=`
+    <!-- Drop zone -->
+    <div class="imp-drop" id="imp-drop">
+      <input type="file" id="imp-file" accept=".csv,.xlsx,.xls" onchange="impHandleFile(this.files[0])">
+      <div class="imp-drop-icon">📂</div>
+      <div class="imp-drop-title">Arrastra tu CSV o Excel aquí, o haz clic para seleccionar</div>
+      <div class="imp-drop-sub">El archivo se procesa en tu navegador — tus datos no salen de tu equipo</div>
+      <div class="imp-formats">
+        <span class="imp-pill">.csv</span>
+        <span class="imp-pill">.xlsx</span>
+        <span class="imp-pill">.xls</span>
+      </div>
+    </div>
+    <div class="imp-template">
+      ¿No sabes el formato? <a href="#" onclick="impDownloadTemplate();return false;">↓ Descarga la plantilla Excel</a> con las columnas correctas
+    </div>
+
+    <!-- Mapping (oculto hasta subir archivo) -->
+    <div id="imp-mapping" style="display:none">
+      <div class="imp-section-label">Columnas detectadas automáticamente</div>
+      <div class="imp-mapping-grid" id="imp-mapping-grid"></div>
+    </div>
+
+    <!-- Preview table (oculto hasta subir archivo) -->
+    <div class="table-wrap" id="imp-preview" style="display:none">
+      <div class="imp-preview-header">
+        <span class="imp-preview-title">Vista previa</span>
+        <div class="imp-stats">
+          <div class="imp-stat"><div class="imp-sdot" style="background:var(--accent)"></div><span id="imp-ok">0 correctas</span></div>
+          <div class="imp-stat"><div class="imp-sdot" style="background:var(--amber)"></div><span id="imp-warn">0 avisos</span></div>
+          <div class="imp-stat"><div class="imp-sdot" style="background:var(--red)"></div><span id="imp-err">0 errores</span></div>
+        </div>
+      </div>
+      <div class="imp-table-wrap">
+        <table class="imp-table">
+          <thead id="imp-thead"></thead>
+          <tbody id="imp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Error summary -->
+    <div class="imp-err-summary" id="imp-errsummary" style="display:none"></div>
+
+    <!-- Action bar -->
+    <div class="imp-action-bar" id="imp-action" style="display:none">
+      <div class="imp-info">⬆ Se importarán <strong id="imp-count">0</strong> facturas válidas a Airtable. Las filas con errores se omitirán automáticamente.</div>
+      <div class="imp-btn-row">
+        <button class="btn btn-primary" id="imp-btn" onclick="impStartImport()">Importar a CobraFlow →</button>
+        <button class="btn btn-secondary" onclick="impReset()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="imp-progress" id="imp-progress" style="display:none">
+      <div class="imp-progress-title">Importando facturas...</div>
+      <div class="imp-bar-track"><div class="imp-bar-fill" id="imp-bar"></div></div>
+      <div class="imp-progress-text" id="imp-ptext">Preparando...</div>
+    </div>
+
+    <!-- Success -->
+    <div class="imp-success" id="imp-success" style="display:none">
+      <div class="imp-success-icon">✅</div>
+      <div class="imp-success-title" id="imp-stitle">¡Importación completada!</div>
+      <div class="imp-success-sub" id="imp-ssub"></div>
+      <br>
+      <button class="btn btn-secondary" onclick="impReset()" style="margin:12px auto 0">Importar otro archivo</button>
+    </div>
+  `;
+
+  // Drag & drop
+  const dz=document.getElementById('imp-drop');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files[0])impHandleFile(e.dataTransfer.files[0]);});
+}
+
+function impHandleFile(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let wb;
+    if(ext==='csv') wb=XLSX.read(e.target.result,{type:'string',raw:false});
+    else wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    impParsed=rows;
+    impProcess(rows);
+  };
+  if(ext==='csv')reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function impDetectCols(rows){
+  if(!rows.length)return{};
+  const headers=Object.keys(rows[0]);
+  const mapping={};
+  for(const [field,aliases] of Object.entries(IMP_FIELDS)){
+    for(const h of headers){
+      const norm=h.toLowerCase().trim().replace(/[_\-\.]/g,' ');
+      if(aliases.some(a=>norm.includes(a)||a.includes(norm))){mapping[field]=h;break;}
+    }
+  }
+  return mapping;
+}
+
+function impValidateRow(row,mapping){
+  const errors=[],warnings=[];
+  const email=(row[mapping['Email']]||'').toString().trim();
+  const importe=(row[mapping['Importe']]||'').toString().trim().replace(',','.');
+  const nombre=(row[mapping['Nombre deudor']]||'').toString().trim();
+  if(!nombre)errors.push('Nombre vacío');
+  if(!email)errors.push('Email vacío');
+  else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))errors.push('Email inválido');
+  if(!importe)errors.push('Importe vacío');
+  else if(isNaN(parseFloat(importe)))errors.push('Importe no numérico');
+  else if(parseFloat(importe)<=0)warnings.push('Importe ≤ 0');
+  if(!mapping['Empresa']||!row[mapping['Empresa']])warnings.push('Sin empresa');
+  if(!mapping['Fecha factura']||!row[mapping['Fecha factura']])warnings.push('Sin fecha');
+  return{errors,warnings};
+}
+
+function impProcess(rows){
+  impMapping=impDetectCols(rows);
+
+  // Render mapping panel
+  const allMapped=Object.keys(IMP_FIELDS).every(f=>impMapping[f]);
+  const mgrid=document.getElementById('imp-mapping-grid');
+  mgrid.innerHTML='';
+  for(const [field] of Object.entries(IMP_FIELDS)){
+    const src=impMapping[field];
+    const left=document.createElement('div');left.className='imp-col-src';left.textContent=src||'— no encontrada';
+    const arrow=document.createElement('div');arrow.className='imp-arrow';arrow.textContent='→';
+    const right=document.createElement('div');right.className=src?'imp-col-ok':'imp-col-warn';right.textContent=field;
+    mgrid.appendChild(left);mgrid.appendChild(arrow);mgrid.appendChild(right);
+  }
+  document.getElementById('imp-mapping').style.display='block';
+
+  // Validate rows
+  let okC=0,warnC=0,errC=0;
+  impValid=[];
+  const tableRows=[];
+  rows.forEach((row,i)=>{
+    const {errors,warnings}=impValidateRow(row,impMapping);
+    const hasErr=errors.length>0;
+    const hasWarn=!hasErr&&warnings.length>0;
+    if(!hasErr){impValid.push(row);if(hasWarn)warnC++;else okC++;}else errC++;
+    tableRows.push({row,errors,warnings,i,hasErr,hasWarn});
+  });
+
+  // Render table
+  const fields=Object.keys(IMP_FIELDS);
+  document.getElementById('imp-thead').innerHTML='<tr><th>#</th>'+fields.map(f=>`<th>${f}</th>`).join('')+'<th>Estado</th></tr>';
+  document.getElementById('imp-tbody').innerHTML=tableRows.map(({row,errors,warnings,i,hasErr,hasWarn})=>{
+    const rc=hasErr?'row-err':hasWarn?'row-warn':'';
+    const cells=fields.map(f=>{
+      const src=impMapping[f];
+      const val=src?(row[src]||'').toString():'';
+      if(!val&&(f==='Nombre deudor'||f==='Email'||f==='Importe'))return`<td><span class="imp-cerr">vacío</span></td>`;
+      if(f==='Email'&&val&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val))return`<td><span class="imp-cerr">${val}</span></td>`;
+      if(f==='Importe'&&val){
+        const n=parseFloat(val.replace(',','.'));
+        if(isNaN(n))return`<td><span class="imp-cerr">${val}</span></td>`;
+        if(n<=0)return`<td><span class="imp-cwarn">${val}</span></td>`;
+        return`<td>${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:0}).format(n)}</td>`;
+      }
+      return`<td>${val||'<span style="color:var(--muted);font-size:10px">—</span>'}</td>`;
+    });
+    let chip;
+    if(hasErr)chip=`<span class="imp-chip imp-chip-err">✗ ${errors[0]}</span>`;
+    else if(hasWarn)chip=`<span class="imp-chip imp-chip-warn">⚠ ${warnings[0]}</span>`;
+    else chip=`<span class="imp-chip imp-chip-ok">✓ ok</span>`;
+    return`<tr class="${rc}"><td class="imp-rnum">${i+1}</td>${cells.join('')}<td>${chip}</td></tr>`;
+  }).join('');
+
+  document.getElementById('imp-ok').textContent=okC+' correctas';
+  document.getElementById('imp-warn').textContent=warnC+' avisos';
+  document.getElementById('imp-err').textContent=errC+' errores';
+  document.getElementById('imp-preview').style.display='block';
+
+  // Error summary
+  const es=document.getElementById('imp-errsummary');
+  if(errC>0){es.style.display='block';es.textContent=`⚠ ${errC} fila${errC>1?'s':''} con errores no se importará${errC>1?'n':''}. Corrígelas en el archivo original y vuelve a subirlo.`;}
+  else es.style.display='none';
+
+  // Action bar
+  document.getElementById('imp-count').textContent=impValid.length;
+  document.getElementById('imp-action').style.display=impValid.length>0?'flex':'none';
+}
+
+async function impStartImport(){
+  if(!impValid.length)return;
+  document.getElementById('imp-action').style.display='none';
+  document.getElementById('imp-progress').style.display='block';
+  const bar=document.getElementById('imp-bar');
+  const ptxt=document.getElementById('imp-ptext');
+  const {data:{user}}=await sb.auth.getUser();
+  const uid=user?user.id:'';
+  let done=0,failed=0;
+
+  function calcDias(fechaStr){
+    if(!fechaStr)return 0;
+    const d=new Date(fechaStr);
+    if(isNaN(d))return 0;
+    const today=new Date();
+    return Math.max(0,Math.floor((today-d)/86400000));
+  }
+  function calcNivel(dias){
+    if(dias>=45)return'Nivel 4';
+    if(dias>=30)return'Nivel 3';
+    if(dias>=20)return'Nivel 2';
+    return'Nivel 1';
+  }
+
+  for(const row of impValid){
+    const nombre=(row[impMapping['Nombre deudor']]||'').toString().trim();
+    const empresa=impMapping['Empresa']?(row[impMapping['Empresa']]||'').toString().trim():'';
+    const email=(row[impMapping['Email']]||'').toString().trim();
+    const importe=parseFloat((row[impMapping['Importe']]||'0').toString().replace(',','.'));
+    const fecha=impMapping['Fecha factura']?(row[impMapping['Fecha factura']]||'').toString().trim():'';
+    const dias=calcDias(fecha);
+    const nivel=calcNivel(dias);
+
+    const fields={
+      'Numero factura':`IMP-${Date.now().toString(36).toUpperCase()}`,
+      'Emaildeudor':email,
+      'Importe':importe,
+      'Estado':'Pendiente',
+      'Nivel actual':nivel,
+      'cliente_id':uid,
+    };
+    if(fecha)fields['Fecha vencimiento']=fecha;
+    if(empresa)fields['Nombre deudor']=empresa; // empresa como referencia de deudor
+
+    try{
+      // Crear deudor si no existe
+      const deudorExistente=deus.find(d=>d.fields['Email deudor']===email&&d.fields['cliente_id']===uid);
+      if(!deudorExistente){
+        await ac('Deudores',{
+          'Nombre del deudor':nombre,
+          'Email deudor':email,
+          'Historial pagos':'Siempre paga',
+          'cliente_id':uid
+        });
+      }
+      await ac(TF,fields);
+      done++;
+    }catch(e){failed++;console.error('Error importando fila:',e);}
+
+    const pct=Math.round(((done+failed)/impValid.length)*100);
+    bar.style.width=pct+'%';
+    ptxt.textContent=`${done+failed} de ${impValid.length} facturas...`;
+    await new Promise(r=>setTimeout(r,80));
+  }
+
+  document.getElementById('imp-progress').style.display='none';
+  document.getElementById('imp-success').style.display='block';
+  document.getElementById('imp-stitle').textContent=`¡${done} facturas importadas!`;
+  document.getElementById('imp-ssub').textContent=failed>0
+    ?`${done} importadas correctamente. ${failed} fallaron por error de conexión.`
+    :`Todos los registros creados en Airtable. Make enviará los emails mañana a las 9:00 automáticamente.`;
+
+  // Recargar datos
+  const fml=uid?`{cliente_id}="${uid}"`:'';
+  facts=await af(TF,fml);
+  deus=await af('Deudores',fml);
+}
+
+function impReset(){
+  impParsed=[];impMapping={};impValid=[];
+  rImport();
+}
+
+function impDownloadTemplate(){
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['Nombre deudor','Empresa','Email','Importe','Fecha factura'],
+    ['Juan García López','Construcciones García SL','jgarcia@cgarciasl.com','3500','2026-05-01'],
+    ['María Fernández','Reformas MF','mfernandez@reformasmf.es','1200','2026-04-15'],
+    ['Carlos Ruiz','Obras Ruiz SL','cruiz@obrasruiz.es','8750','2026-04-01'],
+  ]);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Facturas CobraFlow');
+  XLSX.writeFile(wb,'plantilla_cobraflow.xlsx');
+}
+
+// ─── FORMULARIOS ──────────────────────────────────────────────────────────────
 function showDetail(id){
   const f=facts.find(x=>x.id===id);if(!f)return;
   const p=f.fields;
@@ -695,10 +1048,9 @@ function showDetail(id){
     <div class="drow"><span class="dkey">Estado</span><span class="dval">${sbadge(p['Estado'])}</span></div>
     <div class="dactions">
       ${p['Estado']==='Cobrada'||p['Estado']==='Cancelada'
-        ? `<button class="btn btn-amber" onclick="reactivarFact('${id}')">↺ Reactivar</button>`
-        : `<button class="btn btn-primary" onclick="markCobrada('${id}')">✓ Marcar cobrada</button>
-           <button class="btn btn-danger" onclick="cancelFact('${id}')">Cancelar</button>`
-      }
+        ?`<button class="btn btn-amber" onclick="reactivarFact('${id}')">↺ Reactivar</button>`
+        :`<button class="btn btn-primary" onclick="markCobrada('${id}')">✓ Marcar cobrada</button>
+           <button class="btn btn-danger" onclick="cancelFact('${id}')">Cancelar</button>`}
       <button class="btn btn-secondary" onclick="editFactura('${id}')">✎ Editar</button>
       <button class="btn btn-secondary" onclick="closeDetail()">Cerrar</button>
     </div>`;
@@ -715,10 +1067,9 @@ async function reactivarFact(id){
     const vencimiento=new Date(vn);vencimiento.setHours(0,0,0,0);
     const diasRetraso=Math.max(0,Math.floor((hoy-vencimiento)/(1000*60*60*24)));
     let nivelActual='Nivel 1';
-    if(diasRetraso>=45) nivelActual='Nivel 4';
-    else if(diasRetraso>=30) nivelActual='Nivel 3';
-    else if(diasRetraso>=20) nivelActual='Nivel 2';
-    else nivelActual='Nivel 1';
+    if(diasRetraso>=45)nivelActual='Nivel 4';
+    else if(diasRetraso>=30)nivelActual='Nivel 3';
+    else if(diasRetraso>=20)nivelActual='Nivel 2';
     await au(TF,id,{'Estado':'Pendiente','Nivel actual':nivelActual});
     toast('Factura reactivada','success');closeDetail();
     const {data:{user}}=await sb.auth.getUser();
@@ -726,18 +1077,15 @@ async function reactivarFact(id){
     facts=await af(TF,fml);rdash();rfacts();
   }catch{toast('Error al reactivar','error');}
 }
-
 async function markCobrada(id){
   try{await au(TF,id,{'Estado':'Cobrada','Nivel actual':'Cobrada'});toast('Factura marcada como cobrada','success');closeDetail();
-    const {data:{user}}=await sb.auth.getUser();
-    const fml=user?`{cliente_id}="${user.id}"`:'';
+    const {data:{user}}=await sb.auth.getUser();const fml=user?`{cliente_id}="${user.id}"`:'';
     facts=await af(TF,fml);rdash();rfacts();}
   catch{toast('Error al actualizar','error');}
 }
 async function cancelFact(id){
   try{await au(TF,id,{'Estado':'Cancelada','Nivel actual':'Cancelada'});toast('Factura cancelada','success');closeDetail();
-    const {data:{user}}=await sb.auth.getUser();
-    const fml=user?`{cliente_id}="${user.id}"`:'';
+    const {data:{user}}=await sb.auth.getUser();const fml=user?`{cliente_id}="${user.id}"`:'';
     facts=await af(TF,fml);rdash();rfacts();}
   catch{toast('Error al cancelar','error');}
 }
@@ -762,7 +1110,7 @@ function openForm(type){
       <div class="ff"><label class="flabel">Historial de pagos</label><select class="finput" id="fh"><option>Siempre paga</option><option>A veces falla</option><option>Moroso habitual</option></select></div>
     </div>
     <div class="faction"><button class="btn btn-primary" onclick="saveFactura()">Guardar y activar cobro →</button><button class="btn btn-secondary" onclick="closeForm()">Cancelar</button></div>`;
-  } else {
+  }else{
     c.innerHTML=`<div class="fgrid">
       <div class="ff full"><label class="flabel">Nombre *</label><input class="finput" id="dn" placeholder="Empresa SL"></div>
       <div class="ff full"><label class="flabel">Email *</label><input class="finput" id="de2" type="email" placeholder="contacto@empresa.es"></div>
@@ -774,10 +1122,8 @@ function openForm(type){
   }
   document.getElementById('fo').style.display='flex';
 }
-
 function closeForm(){document.getElementById('fo').style.display='none';}
 
-// ─── SAVE FACTURA — calcula nivel automáticamente, guarda Emaildeudor y crea deudor ──
 async function saveFactura(){
   const num=document.getElementById('fn').value.trim();
   const imp=parseFloat(document.getElementById('fi').value);
@@ -790,50 +1136,20 @@ async function saveFactura(){
   if(!num||!imp||!em||!vn||!deu||!eml){toast('Rellena todos los campos obligatorios','error');return;}
   if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado. Actualiza tu plan.`,'error');return;}
   try{
-    const {data:{user}}=await sb.auth.getUser();
-    const uid=user?user.id:'';
-
-    // Calcular días de retraso y nivel automáticamente
-    const hoy=new Date();
-    hoy.setHours(0,0,0,0);
-    const vencimiento=new Date(vn);
-    vencimiento.setHours(0,0,0,0);
+    const {data:{user}}=await sb.auth.getUser();const uid=user?user.id:'';
+    const hoy=new Date();hoy.setHours(0,0,0,0);
+    const vencimiento=new Date(vn);vencimiento.setHours(0,0,0,0);
     const diasRetraso=Math.max(0,Math.floor((hoy-vencimiento)/(1000*60*60*24)));
-
     let nivelActual='Nivel 1';
-    if(diasRetraso>=45) nivelActual='Nivel 4';
-    else if(diasRetraso>=30) nivelActual='Nivel 3';
-    else if(diasRetraso>=20) nivelActual='Nivel 2';
-    else nivelActual='Nivel 1';
-
-    // Crear deudor automáticamente si no existe ya
+    if(diasRetraso>=45)nivelActual='Nivel 4';
+    else if(diasRetraso>=30)nivelActual='Nivel 3';
+    else if(diasRetraso>=20)nivelActual='Nivel 2';
     const deudorExistente=deus.find(d=>d.fields['Email deudor']===eml&&d.fields['cliente_id']===uid);
-    if(!deudorExistente){
-      await ac('Deudores',{
-        'Nombre del deudor':deu,
-        'Email deudor':eml,
-        'Teléfono':tel,
-        'Historial pagos':hist,
-        'cliente_id':uid
-      });
-    }
-
-    await ac(TF,{
-      'Numero factura':num,
-      'Importe':imp,
-      'Fecha emision':em,
-      'Fecha vencimiento':vn,
-      'Nivel actual':nivelActual,
-      'Estado':'Pendiente',
-      'cliente_id':uid,
-      'Emaildeudor':eml
-    });
-    toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');
-    closeForm();
+    if(!deudorExistente){await ac('Deudores',{'Nombre del deudor':deu,'Email deudor':eml,'Teléfono':tel,'Historial pagos':hist,'cliente_id':uid});}
+    await ac(TF,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Nivel actual':nivelActual,'Estado':'Pendiente','cliente_id':uid,'Emaildeudor':eml});
+    toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');closeForm();
     const fml=uid?`{cliente_id}="${uid}"`:'';
-    facts=await af(TF,fml);
-    deus=await af('Deudores',fml);
-    rdash();rfacts();rdeus();
+    facts=await af(TF,fml);deus=await af('Deudores',fml);rdash();rfacts();rdeus();
   }catch{toast('Error al guardar. Verifica la conexión con Airtable.','error');}
 }
 
@@ -843,8 +1159,7 @@ async function saveDeudor(){
   if(!n||!e){toast('Nombre y email son obligatorios','error');return;}
   if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado.`,'error');return;}
   try{
-    const {data:{user}}=await sb.auth.getUser();
-    const uid=user?user.id:'';
+    const {data:{user}}=await sb.auth.getUser();const uid=user?user.id:'';
     await ac('Deudores',{'Nombre del deudor':n,'Email deudor':e,'Teléfono':document.getElementById('dt2').value,'Historial pagos':document.getElementById('dh').value,'Notas':document.getElementById('dno').value,'cliente_id':uid});
     toast('Deudor guardado','success');closeForm();
     const fml=uid?`{cliente_id}="${uid}"`:'';
@@ -880,33 +1195,19 @@ async function saveEditFactura(id){
   const em=document.getElementById('ef-em').value;
   const vn=document.getElementById('ef-vn').value;
   const eml=document.getElementById('ef-eml').value.trim();
-  const deu=document.getElementById('ef-deu').value.trim();
   if(!num||!imp||!em||!vn||!eml){toast('Rellena todos los campos obligatorios','error');return;}
-
-  // Recalcular días de retraso y nivel
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const vencimiento=new Date(vn);vencimiento.setHours(0,0,0,0);
   const diasRetraso=Math.max(0,Math.floor((hoy-vencimiento)/(1000*60*60*24)));
   let nivelActual='Nivel 1';
-  if(diasRetraso>=45) nivelActual='Nivel 4';
-  else if(diasRetraso>=30) nivelActual='Nivel 3';
-  else if(diasRetraso>=20) nivelActual='Nivel 2';
-  else nivelActual='Nivel 1';
-
+  if(diasRetraso>=45)nivelActual='Nivel 4';
+  else if(diasRetraso>=30)nivelActual='Nivel 3';
+  else if(diasRetraso>=20)nivelActual='Nivel 2';
   try{
-    await au(TF,id,{
-      'Numero factura':num,
-      'Importe':imp,
-      'Fecha emision':em,
-      'Fecha vencimiento':vn,
-      'Emaildeudor':eml,
-      'Nivel actual':nivelActual
-    });
+    await au(TF,id,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Emaildeudor':eml,'Nivel actual':nivelActual});
     toast('Factura actualizada','success');
-    const {data:{user}}=await sb.auth.getUser();
-    const fml=user?`{cliente_id}="${user.id}"`:'';
-    facts=await af(TF,fml);
-    showDetail(id);rdash();rfacts();
+    const {data:{user}}=await sb.auth.getUser();const fml=user?`{cliente_id}="${user.id}"`:'';
+    facts=await af(TF,fml);showDetail(id);rdash();rfacts();
   }catch{toast('Error al guardar','error');}
 }
 
