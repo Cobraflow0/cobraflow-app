@@ -961,6 +961,9 @@ function impBuildPreview(rows,mapping){
         if(n<=0)return`<td><span class="imp-cwarn">${val}</span></td>`;
         return`<td>${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:0}).format(n)}</td>`;
       }
+      if(f==='Fecha factura'&&val){
+        return`<td>${excelDateToJS(val)}</td>`;
+      }
       return`<td>${val||'<span style="color:var(--muted);font-size:10px">—</span>'}</td>`;
     });
     let chip;
