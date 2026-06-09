@@ -989,9 +989,18 @@ async function impStartImport(){
   const {data:{user}}=await sb.auth.getUser();
   const uid=user?user.id:'';
   let done=0,failed=0;
+  function excelDateToJS(val){
+    const n=parseFloat(val);
+    if(!isNaN(n)&&n>40000&&n<60000){
+      const d=new Date(Math.round((n-25569)*86400000));
+      return d.toISOString().slice(0,10);
+    }
+    return val;
+  }
   function calcDias(fechaStr){
     if(!fechaStr)return 0;
-    const d=new Date(fechaStr);
+    const converted=excelDateToJS(fechaStr);
+    const d=new Date(converted);
     if(isNaN(d))return 0;
     return Math.max(0,Math.floor((new Date()-d)/86400000));
   }
@@ -1006,7 +1015,7 @@ async function impStartImport(){
     const email=impMapping['Email']?(row[impMapping['Email']]||'').toString().trim():'';
     const importeRaw=impMapping['Importe']?(row[impMapping['Importe']]||'0').toString().replace(/[€$\s]/g,'').replace(',','.'):'0';
     const importe=parseFloat(importeRaw)||0;
-    const fecha=impMapping['Fecha factura']?(row[impMapping['Fecha factura']]||'').toString().trim():'';
+    const fecha=impMapping['Fecha factura']?excelDateToJS((row[impMapping['Fecha factura']]||'').toString().trim()):'';
     const dias=calcDias(fecha);
     const nivel=calcNivel(dias);
     const fields={
