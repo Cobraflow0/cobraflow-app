@@ -1218,7 +1218,7 @@ async function saveFactura(){
     else if(diasRetraso>=30)nivelActual='Nivel 3';
     else if(diasRetraso>=20)nivelActual='Nivel 2';
     const deudorExistente=deus.find(d=>d.fields['Email deudor']===eml&&d.fields['cliente_id']===uid);
-    if(!deudorExistente){await ac('Deudores',{'Nombre del deudor':deu,'Email deudor':eml,'Teléfono':tel,'Historial pagos':hist,'cliente_id':uid});}
+    if(!deudorExistente){await ac('Deudores',{'Nombre del deudor':deu,'Email deudor':eml,'Telefono':tel,'Historial pagos':hist,'cliente_id':uid});}
     await ac(TF,{'Numero factura':num,'Importe':imp,'Fecha emision':em,'Fecha vencimiento':vn,'Nivel actual':nivelActual,'Estado':'Pendiente','cliente_id':uid,'Emaildeudor':eml});
     toast('Factura creada. CobraFlow actuará mañana a las 9:00','success');closeForm();
     const fml=uid?`{cliente_id}="${uid}"`:'';
@@ -1233,7 +1233,7 @@ async function saveDeudor(){
   if(P.max<99999&&deus.length>=P.max){toast(`Límite de ${P.max} deudores alcanzado.`,'error');return;}
   try{
     const {data:{user}}=await sb.auth.getUser();const uid=user?user.id:'';
-    await ac('Deudores',{'Nombre del deudor':n,'Email deudor':e,'Teléfono':document.getElementById('dt2').value,'Historial pagos':document.getElementById('dh').value,'Notas':document.getElementById('dno').value,'cliente_id':uid});
+    await ac('Deudores',{'Nombre del deudor':n,'Email deudor':e,'Telefono':document.getElementById('dt2').value,'Historial pagos':document.getElementById('dh').value,'Notas':document.getElementById('dno').value,'cliente_id':uid});
     toast('Deudor guardado','success');closeForm();
     const fml=uid?`{cliente_id}="${uid}"`:'';
     deus=await af('Deudores',fml);rdeus();
