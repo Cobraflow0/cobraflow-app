@@ -366,6 +366,22 @@ let impParsed=[],impMapping={},impValid=[];
 // Orden importa: el primero que coincida gana.
 // "Razón Social" está primero en Nombre deudor — cubre exports españoles de Holded/Sage.
 // Fechas de vencimiento van antes que emisión.
+function excelDateToJS(val){
+  const n=parseFloat(val);
+  if(!isNaN(n)&&n>40000&&n<60000){
+    const d=new Date(Math.round((n-25569)*86400000));
+    return d.toISOString().slice(0,10);
+  }
+  return val;
+}
+function calcDias(fechaStr){
+  if(!fechaStr)return 0;
+  const converted=excelDateToJS(fechaStr);
+  const d=new Date(converted);
+  if(isNaN(d))return 0;
+  return Math.max(0,Math.floor((new Date()-d)/86400000));
+}
+
 const IMP_FIELDS={
   'Nombre deudor':[
     'razon social','razón social','nombre deudor','cliente','nombre cliente',
@@ -981,22 +997,6 @@ function impBuildPreview(rows,mapping){
   else es.style.display='none';
   document.getElementById('imp-count').textContent=impValid.length;
   document.getElementById('imp-action').style.display=impValid.length>0?'flex':'none';
-}
-
-function excelDateToJS(val){
-  const n=parseFloat(val);
-  if(!isNaN(n)&&n>40000&&n<60000){
-    const d=new Date(Math.round((n-25569)*86400000));
-    return d.toISOString().slice(0,10);
-  }
-  return val;
-}
-function calcDias(fechaStr){
-  if(!fechaStr)return 0;
-  const converted=excelDateToJS(fechaStr);
-  const d=new Date(converted);
-  if(isNaN(d))return 0;
-  return Math.max(0,Math.floor((new Date()-d)/86400000));
 }
 
 async function impStartImport(){
